@@ -10139,6 +10139,60 @@ async def clearsnipe(ctx):
         await ctx.message.add_reaction("✅")
     except Exception:
         pass
+        # ============ GROQ AI CHAT ============
+from groq import Groq
+
+_groq_key = os.getenv("GROQ_API_KEY")
+groq_client = Groq(api_key=_groq_key) if _groq_key else None
+
+_groq_history = {}
+
+@bot.hybrid_command(name="chat", aliases=["ai", "ask"], description="Chat with AI")
+@app_commands.describe(message="Ask the AI anything")
+async def chat(ctx, *, message: str):
+    if groq_client is None:
+        return await ctx.send("❌ No GROQ_API_KEY set on Railway.")
+
+    if ctx.interaction:
+        await ctx.interaction.response.defer()
+    else:
+        await ctx.typing()
+
+    hist = _groq_history.setdefault(ctx.channel.id, [])
+    hist.append({"role": "user", "content": message})
+    hist[:] = hist[-20:]
+
+    try:
+        res = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "system", "content": "You are a helpful Discord assistant. Keep replies short."}] + hist,
+            max_tokens=1024,
+        )
+        reply = res.choices[0].message.content.strip() or "(no reply)"
+    except Exception as e:
+        return await ctx.send(f"❌ Groq error: `{str(e)[:150]}`")
+
+    hist.append({"role": "assistant", "content": reply})
+    hist[:] = hist[-20:]
+
+    # split long replies (Discord 2000 char limit)
+    for i in range(0, len(reply), 1900):
+        piece = reply[i:i+1900]
+        if ctx.interaction:
+            await ctx.interaction.followup.send(piece)
+        else:
+            await ctx.send(piece)
+
+
+@bot.hybrid_command(name="chatreset", description="Clear AI memory for this channel")
+async def chatreset(ctx):
+    _groq_history.pop(ctx.channel.id, None)
+    if ctx.interaction:
+        await ctx.interaction.response.send_message("🧹 Cleared.", ephemeral=True)
+    else:
+        await ctx.send("🧹 Cleared.")
+# ============ END GROQ ============
+
 # =========================================================
 # RUN BOT
 # =========================================================
