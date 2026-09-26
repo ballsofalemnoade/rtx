@@ -10160,7 +10160,7 @@ async def chat(ctx, *, message: str):
 
         try:
             res = groq_client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="openai/gpt-oss-120b",  # <-- NEW MODEL
                 messages=[{"role": "system", "content": "You are a helpful Discord assistant. Keep replies short."}] + hist,
                 max_tokens=1024,
             )
@@ -10171,6 +10171,7 @@ async def chat(ctx, *, message: str):
         hist.append({"role": "assistant", "content": reply})
         hist[:] = hist[-20:]
 
+    # Split long replies for Discord's 2000-char limit
     for i in range(0, len(reply), 1900):
         await ctx.send(reply[i:i+1900])
 
