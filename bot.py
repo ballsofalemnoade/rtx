@@ -3360,21 +3360,15 @@ async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"
             return await ctx.interaction.response.send_message(f"❌ {member.mention} has a higher or equal role than me, I cannot ban them.", ephemeral=True)
         return await ctx.send(f"❌ {member.mention} has a higher or equal role than me, I cannot ban them.")
 
-    await member.ban(reason=reason)
+     await member.ban(reason=reason)
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "ban", reason)
     
-    embed = discord.Embed(
-        title="👋 Successfully Banned",
-        color=discord.Color.red()
-    )
-    embed.add_field(name="Member", value=f"{member.mention}", inline=False)
-    embed.add_field(name="📄 Reason", value=reason, inline=False)
-    embed.set_footer(text=f"Banned by {ctx.author.display_name}")
+    message = f"**Banned {member.display_name}**\n**Reason : {reason}**"
     
     if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
+        await ctx.interaction.response.send_message(message)
     else:
-        await ctx.send(embed=embed)
+        await ctx.send(message)
 # =========================================================
 # UNBAN COMMAND
 # =========================================================
