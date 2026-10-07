@@ -4994,7 +4994,7 @@ async def giveaway_reroll(ctx, message_id: int, count: int = 1):
 # SYNC COMMAND
 # =========================================================
 
-TICK = "<:rynnx:1557367041709576242>"
+TICK = "1557367041709576242"
 
 
 @bot.hybrid_command(name="sync", description="Force sync slash commands")
