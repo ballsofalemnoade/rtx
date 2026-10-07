@@ -2660,6 +2660,10 @@ async def withdraw(ctx, amount: str):
     embed = discord.Embed(description=f"🏦 Successfully withdrew **${val:,}** from your bank.", color=discord.Color.green())
     await ctx.send(embed=embed)
 
+# =========================================================
+# DAILY
+# =========================================================
+
 @bot.hybrid_command(name="daily", description="Claim your daily reward")
 async def daily(ctx):
     user_id = ctx.author.id
@@ -2672,15 +2676,18 @@ async def daily(ctx):
         remaining = int(cooldown - (current_time - row[0]))
         hours = remaining // 3600
         minutes = (remaining % 3600) // 60
-        embed = discord.Embed(description=f"⏳ Already claimed daily reward. Try again in **{hours}h {minutes}m**.", color=discord.Color.orange())
+        embed = discord.Embed(description=f"⏳ Already claimed daily reward. Try again in **{hours}h {minutes}m**.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     reward = 500
     update_wallet(user_id, reward)
     cursor.execute("UPDATE users SET daily_claim = ? WHERE user_id = ?", (current_time, user_id))
     db.commit()
-    embed = discord.Embed(description=f"💸 Successfully claimed daily reward of **${reward:,}**!", color=discord.Color.green())
-    await ctx.send(embed=embed)
+
+    embed = discord.Embed(description=f"<:DailyClaim:1557375724531490836> Successfully claimed daily reward of **${reward:,}**!", color=discord.Color.from_rgb(87, 242, 135))
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
 # =========================================================
 # WORK COMMAND MEDIA
 # =========================================================
