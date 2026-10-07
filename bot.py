@@ -6906,8 +6906,7 @@ async def stealurl(ctx, *, input_text: str):
 # ROLE COMMAND
 # =========================================================
 
-TICK = "<:rynnx:1557365310963589172>"
-
+TICK = "<:rynnx:1557367041709576242>"
 
 @bot.hybrid_command(name="role", description="Add roles to a member")
 @commands.has_permissions(manage_roles=True)
