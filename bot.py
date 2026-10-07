@@ -3176,31 +3176,26 @@ async def afk(ctx, *, reason: str = "AFK"):
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if ctx.guild.owner_id == member.id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ {ctx.author.mention} you cannot ban the server owner.", ephemeral=True)
-        return await ctx.send(f"❌ {ctx.author.mention} you cannot ban the server owner.")
+        embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot ban the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
 
     if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            if ctx.interaction:
-                return await ctx.interaction.response.send_message(f"❌ {ctx.author.mention} you cannot ban a staff member.", ephemeral=True)
-            return await ctx.send(f"❌ {ctx.author.mention} you cannot ban a staff member.")
+            embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot ban a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+            return await ctx.send(embed=embed)
 
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ {member.mention} has a higher or equal role than me, I cannot ban them.", ephemeral=True)
-        return await ctx.send(f"❌ {member.mention} has a higher or equal role than me, I cannot ban them.")
+        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me, I cannot ban them.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
 
     await member.ban(reason=reason)
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "ban", reason)
-
-    message = f"**Banned {member.display_name}**\n**Reason : {reason}**"
-
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(message)
-    else:
-        await ctx.send(message)
-        
+    embed = discord.Embed(description=f"<:banned:1557374684650283058> **{member.display_name}** has been banned.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)    
 # =========================================================
 # UNBAN COMMAND
 # =========================================================
