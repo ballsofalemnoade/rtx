@@ -7935,75 +7935,9 @@ async def slap(ctx, member: discord.Member = None):
         await ctx.interaction.response.send_message(embed=embed)
     else:
         await ctx.send(embed=embed)
-@bot.command(name='rules')
-async def rules(ctx):
-    """Sends the server rules"""
-    
-    embed = discord.Embed(
-        title="📜 SERVER RULES",
-        description="Follow these rules to keep the server safe and enjoyable for everyone!",
-        color=discord.Color.blue()
-    )
-    
-    embed.add_field(
-        name="1. No NSFW or Gore",
-        value="You will be immediately banned if you spam this or it's obviously not a joke.",
-        inline=False
-    )
-    
-    embed.add_field(
-        name="2. No Spamming",
-        value="Unless permitted (this is not allowed even if you have no cooldown).",
-        inline=False
-    )
-    
-    embed.add_field(
-        name="3. No Doxxing/Sharing Personal Information",
-        value="This is not cool.",
-        inline=False
-    )
-    
-    embed.add_field(
-        name="4. Use Channels for Their Dedicated Purpose",
-        value="Even if you have access to do something in a channel that you're not supposed to, do not use the channel as your playground.",
-        inline=False
-    )
-    
-    embed.add_field(
-        name="5. Do Not Use Profanity",
-        value="Even if you are saying mean things indirectly, that's not allowed.",
-        inline=False
-    )
-    
-    embed.add_field(
-        name="6. No Advertising",
-        value="Unless given permission or in a dedicated channel for it.",
-        inline=False
-    )
-    
-    embed.add_field(
-        name="7. Follow Discord's TOS",
-        value="Don't get the server deleted. [Click here](https://discord.com/guidelines)",
-        inline=False
-    )
-    
-    embed.set_footer(text="Use common sense 💡")
-    
-    await ctx.send(embed=embed)
-    
-    print(f'✅ Logged in as {bot.user}')
-    print(f'📡 Connected to {len(bot.guilds)} servers')
-    print(f'👥 Serving {len(bot.users)} users')
-    print(f'📋 Loaded rules for {len(rules_cache)} servers')
-    await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.listening,
-            name=f"{len(bot.guilds)} servers | R!help"
-        )
-    )
-# =========================================================
+# ===========================================================
 # PERMISSION SYSTEM & ERROR HANDLER - PASTE THIS ENTIRE BLOCK
-# =========================================================
+# ===========================================================
 
 # ---------- PERMISSION CHECKS ----------
 
