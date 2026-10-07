@@ -10260,50 +10260,26 @@ async def on_ready():
         )
     )
 # =========================================================
-# FAKE NITRO — "For you my bsf" + Rickroll button
+# FAKE NITRO — convincing gift message + rickroll button
 # =========================================================
+
+FAKE_NITRO_LINKS = [
+    "https://discord.gift/abc123XYZdefGHI",
+    "https://discord.gift/xK9mP2qL7nR4tY6w",
+    "https://discord.gift/aB3cD5eF7gH9iJ1k",
+    "https://discord.gift/Zy8Xw6Vu4Ts2Rq0P",
+    "https://discord.gift/mN4bV6cX8zL0kJ2h",
+]
 
 RICKROLL_URL = "https://youtu.be/dQw4w9WgXcQ?si=nrcYlllvyK1He4Xb"
 
-
-async def _get_or_create_bfs_webhook(channel: discord.TextChannel):
-    """Get or create a reusable webhook for the bsf message."""
-    try:
-        existing = await channel.webhooks()
-        for wh in existing:
-            if wh.name == "Bsf" and wh.user and wh.user.id == bot.user.id:
-                return wh
-    except Exception as e:
-        print(f"[fakenitro] list webhooks failed: {e}")
-
-    try:
-        wh = await channel.create_webhook(name="Bsf", reason="Fake nitro webhook")
-        print(f"[fakenitro] created webhook {wh.id} in #{channel.name}")
-        return wh
-    except Exception as e:
-        print(f"[fakenitro] create webhook failed: {type(e).__name__}: {e}")
-        return None
-
-
-class NitroRedeemView(discord.ui.View):
-    """Persistent view with a link button that goes to the rickroll."""
-    def __init__(self, member_name: str):
-        super().__init__(timeout=None)
-        # A "link" style button — clicking opens the URL, no interaction needed
-        self.add_item(
-            discord.ui.Button(
-                label=f"Redeem for {member_name}",
-                emoji="🎁",
-                style=discord.ButtonStyle.link,
-                url=RICKROLL_URL,
-            )
-        )
+NITRO_GIFT_IMAGE = "https://cdn.discordapp.com/attachments/1347952642982486016/1347952642982486016/nitro_gift.png"
 
 
 @bot.hybrid_command(
     name="fakenitro",
-    aliases=["nitro", "fn", "fakeboost", "bsfnitro"],
-    description="Send a fake Nitro gift to a friend",
+    aliases=["nitro", "fn", "fakeboost"],
+    description="Send a Nitro gift message",
 )
 async def fakenitro(ctx, member: discord.Member = None):
     if ctx.interaction:
@@ -10315,47 +10291,50 @@ async def fakenitro(ctx, member: discord.Member = None):
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    if not isinstance(ctx.channel, discord.TextChannel):
-        msg = "❌ Only works in text channels."
-        if ctx.interaction:
-            return await ctx.interaction.followup.send(msg, ephemeral=True)
-        return await ctx.send(msg)
-
-    if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
-        msg = "☄️ I need **Manage Webhooks** permission here."
-        if ctx.interaction:
-            return await ctx.interaction.followup.send(msg, ephemeral=True)
-        return await ctx.send(msg)
-
-    # The "sender" — the person who triggered the command by default
-    sender = ctx.author
-    # Optional @mention = the person being gifted to
-    recipient = member or ctx.author
-
-    # Delete the prefix command message
     if not ctx.interaction and ctx.message:
         try:
             await ctx.message.delete()
         except Exception:
             pass
 
-    webhook = await _get_or_create_bfs_webhook(ctx.channel)
-    if webhook is None:
-        msg = "❌ Couldn't create webhook — check Railway logs."
-        if ctx.interaction:
-            return await ctx.interaction.followup.send(msg, ephemeral=True)
-        return await ctx.send(msg)
+    recipient = member or ctx.author
+    nitro_link = random.choice(FAKE_NITRO_LINKS)
 
-    # The message body — appears in a nice embed-like card with the button
-    view = NitroRedeemView(sender.display_name)
+    # ---------- The visible "boost" line ----------
+    content = (
+        f"🎁 **{recipient.display_name}** just boosted the server!\n"
+        f"{nitro_link}"
+    )
+
+    # ---------- The "gift card" embed (looks like a real active gift) ----------
+    embed = discord.Embed(
+        title="You've been gifted a subscription!",
+        description=(
+            f"**{recipient.display_name}** has gifted you **Nitro**!\n\n"
+            "Click the button below to redeem your gift.\n"
+            "-# This gift expires in 48 hours."
+        ),
+        color=0x5865F2,  # Discord blurple
+    )
+    embed.set_thumbnail(url="https://cdn.discordapp.com/emojis/949750669837475860.gif")
+
+    # "Redeem" button → rickroll
+    view = discord.ui.View(timeout=None)
+    view.add_item(
+        discord.ui.Button(
+            label="Redeem",
+            emoji="🎁",
+            style=discord.ButtonStyle.primary,
+            url=RICKROLL_URL,
+        )
+    )
 
     try:
-        await webhook.send(
-            content=f"**For you my bsf** {recipient.mention}",
-            username=sender.display_name,
-            avatar_url=sender.display_avatar.url,
+        await ctx.send(
+            content=content,
+            embed=embed,
             view=view,
-            wait=False,
+            suppress_embeds=True,
         )
     except Exception as e:
         print(f"[fakenitro] send failed: {type(e).__name__}: {e}")
