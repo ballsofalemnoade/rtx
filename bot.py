@@ -10260,6 +10260,59 @@ async def on_ready():
         )
     )
 # =========================================================
+# FAKE NITRO COMMAND
+# =========================================================
+
+FAKE_NITRO_LINKS = [
+    "https://discord.gift/abc123XYZdefGHI",
+    "https://discord.gift/xK9mP2qL7nR4tY6w",
+    "https://discord.gift/aB3cD5eF7gH9iJ1k",
+    "https://discord.gift/Zy8Xw6Vu4Ts2Rq0P",
+    "https://discord.gift/mN4bV6cX8zL0kJ2h",
+]
+
+
+@bot.command(name="fakenitro", aliases=["nitro", "fn"], description="Send a fake Nitro gift message")
+async def fakenitro(ctx):
+    if ctx.guild is None:
+        return await ctx.send("❌ This command only works in a server.")
+
+    # Need manage_webhooks permission for the bot
+    if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
+        return await ctx.send("☄️ I need **Manage Webhooks** permission to do this!")
+
+    # Delete the invoking message so it looks clean
+    try:
+        await ctx.message.delete()
+    except Exception:
+        pass
+
+    nitro_link = random.choice(FAKE_NITRO_LINKS)
+
+    try:
+        webhook = await ctx.channel.create_webhook(name="Fake Nitro")
+
+        # Webhook username + avatar mimic Discord's official system message
+        # Name is capped at 80 chars — Discord system shows "Discord" with the gift icon
+        await webhook.send(
+            content=(
+                f"🎁 **{ctx.author.display_name}** just boosted the server!\n\n"
+                f"{nitro_link}"
+            ),
+            username="Discord",
+            avatar_url="https://cdn.discordapp.com/emojis/1238259293617913957.png",  # Nitro gift emoji style
+        )
+
+        try:
+            await webhook.delete()
+        except Exception:
+            pass
+
+    except discord.Forbidden:
+        await ctx.send("❌ I don't have permission to create webhooks here!")
+    except Exception as e:
+        await ctx.send(f"❌ Failed: `{str(e)[:150]}`")
+# =========================================================
 # RUN BOT
 # =========================================================
 
