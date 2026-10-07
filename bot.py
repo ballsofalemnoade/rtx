@@ -10274,11 +10274,10 @@ FAKE_NITRO_LINKS = [
 
 async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
     """Return a reusable 'Discord' webhook for this channel."""
-    # 1) Try to find an existing one
     try:
         existing = await channel.webhooks()
         for wh in existing:
-            if wh.name == "Discord":
+            if wh.name in ("Discord", "Disc\u200bord"):
                 try:
                     if wh.user and wh.user.id == bot.user.id:
                         return wh
@@ -10287,10 +10286,9 @@ async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
     except Exception as e:
         print(f"[fakenitro] listing webhooks failed: {e}")
 
-    # 2) Create a fresh one (NO avatar param — we override per-message anyway)
     try:
         wh = await channel.create_webhook(
-            name="Discord",
+            name="Disc\u200bord",
             reason="Fake Nitro command webhook",
         )
         print(f"[fakenitro] created webhook {wh.id} in #{channel.name}")
@@ -10357,7 +10355,7 @@ async def fakenitro(ctx):
     try:
         await webhook.send(
             content=f"🎁 **{ctx.author.display_name}** just boosted the server!\n{nitro_link}",
-            username="Discord",
+            username="Disc\u200bord",  # zero-width space → looks like "Discord"
             avatar_url="https://cdn.discordapp.com/emojis/949750669837475860.gif",
             wait=False,
         )
