@@ -4994,16 +4994,13 @@ async def giveaway_reroll(ctx, message_id: int, count: int = 1):
 # SYNC COMMAND
 # =========================================================
 
-TICK = "1557367041709576242"
-
-
 @bot.hybrid_command(name="sync", description="Force sync slash commands")
 @app_commands.check(owner_only_predicate)
 async def sync(ctx):
     try:
         await bot.tree.sync()
         embed = discord.Embed(
-            description=f"{TICK} Commands have been synced globally!",
+            description="<:rynnx:1557367041709576242> Commands have been synced globally!",
             color=discord.Color.from_rgb(87, 242, 135),
         )
         if ctx.interaction:
