@@ -10179,6 +10179,325 @@ async def chatreset(ctx):
 # ============ END GROQ ============
 
 # =========================================================
+# CODE REDEEMING SYSTEM (like Steal a Brainrot)
+# =========================================================
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS redeem_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guild_id INTEGER NOT NULL,
+    channel_id INTEGER NOT NULL,
+    message_id INTEGER,
+    code TEXT NOT NULL,
+    hint TEXT,
+    reward INTEGER DEFAULT 0,
+    creator_id INTEGER NOT NULL,
+    created_at REAL NOT NULL,
+    ended INTEGER DEFAULT 0,
+    winner_id INTEGER
+)
+""")
+db.commit()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS redeem_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    guess TEXT,
+    correct INTEGER DEFAULT 0,
+    attempted_at REAL NOT NULL
+)
+""")
+db.commit()
+
+active_codes = {}  # message_id -> code_id
+code_cooldowns = {}  # user_id -> last_attempt_time
+
+
+def is_mod_or_owner(member: discord.Member) -> bool:
+    if not isinstance(member, discord.Member):
+        return False
+    if member.id in OWNER_IDS:
+        return True
+    if member.guild_permissions.administrator:
+        return True
+    if member.guild_permissions.manage_messages:
+        return True
+    if member.guild_permissions.manage_guild:
+        return True
+    mod_roles = {"Moderator", "Mod", "Admin", "Administrator", "Owner", "Management", "Staff"}
+    return any(r.name in mod_roles for r in member.roles)
+
+
+def _normalize_code(text: str) -> str:
+    return text.strip().lower()
+
+
+class CreateCodeModal(discord.ui.Modal, title="Create a Redeem Code"):
+    code_input = discord.ui.TextInput(
+        label="The Code (what users must guess)",
+        placeholder="e.g. skibidi123",
+        required=True,
+        max_length=100,
+    )
+    hint_input = discord.ui.TextInput(
+        label="Hint (optional)",
+        placeholder="e.g. It's a famous meme...",
+        required=False,
+        max_length=200,
+    )
+    reward_input = discord.ui.TextInput(
+        label="Reward ($, optional)",
+        placeholder="e.g. 500 (leave blank for no reward)",
+        required=False,
+        max_length=10,
+    )
+
+    def __init__(self, channel: discord.TextChannel):
+        super().__init__()
+        self.channel = channel
+
+    async def on_submit(self, interaction: discord.Interaction):
+        code_text = self.code_input.value.strip()
+        hint = self.hint_input.value.strip() or None
+        reward_raw = self.reward_input.value.strip()
+
+        reward = 0
+        if reward_raw:
+            try:
+                reward = int(reward_raw)
+                if reward < 0:
+                    reward = 0
+            except ValueError:
+                reward = 0
+
+        embed = discord.Embed(
+            title="🎟️ Code Redeeming",
+            description=(
+                "**A new code has been created!**\n\n"
+                "Guess the code and win!\n"
+                "Click the **Guess** button below to submit your answer."
+            ),
+            color=discord.Color.from_rgb(88, 200, 255),
+        )
+        if hint:
+            embed.add_field(name="💡 Hint", value=hint, inline=False)
+        if reward > 0:
+            embed.add_field(name="💰 Reward", value=f"${reward:,}", inline=False)
+
+        embed.set_footer(
+            text=f"Created by {interaction.user.display_name}",
+            icon_url=interaction.user.display_avatar.url,
+        )
+        embed.timestamp = datetime.utcnow()
+
+        view = RedeemCodeView()
+        msg = await self.channel.send(embed=embed, view=view)
+
+        cursor.execute(
+            "INSERT INTO redeem_codes (guild_id, channel_id, message_id, code, hint, reward, creator_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (interaction.guild.id, self.channel.id, msg.id, code_text, hint, reward, interaction.user.id, time.time()),
+        )
+        db.commit()
+        code_id = cursor.lastrowid
+
+        active_codes[msg.id] = code_id
+
+        await interaction.response.send_message(
+            f"✅ Code created in {self.channel.mention}! The code is: `{code_text}` (only you can see this).",
+            ephemeral=True,
+        )
+
+
+class GuessCodeModal(discord.ui.Modal, title="Guess the Code"):
+    guess_input = discord.ui.TextInput(
+        label="Your guess",
+        placeholder="Type the code here...",
+        required=True,
+        max_length=100,
+    )
+
+    def __init__(self, message_id: int):
+        super().__init__()
+        self.message_id = message_id
+
+    async def on_submit(self, interaction: discord.Interaction):
+        code_id = active_codes.get(self.message_id)
+        if not code_id:
+            return await interaction.response.send_message(
+                "❌ This code has already ended.", ephemeral=True
+            )
+
+        cursor.execute(
+            "SELECT code, reward, ended, winner_id, channel_id, creator_id FROM redeem_codes WHERE id = ?",
+            (code_id,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return await interaction.response.send_message("❌ Code not found.", ephemeral=True)
+
+        real_code, reward, ended, winner_id, channel_id, creator_id = row
+
+        if ended:
+            return await interaction.response.send_message(
+                "❌ This code has already been redeemed.", ephemeral=True
+            )
+
+        # Cooldown 3 seconds per user
+        last = code_cooldowns.get(interaction.user.id, 0)
+        if time.time() - last < 3:
+            wait = 3 - (time.time() - last)
+            return await interaction.response.send_message(
+                f"⏳ Wait `{wait:.1f}s` before guessing again.", ephemeral=True
+            )
+        code_cooldowns[interaction.user.id] = time.time()
+
+        guess = self.guess_input.value.strip()
+        correct = _normalize_code(guess) == _normalize_code(real_code)
+
+        cursor.execute(
+            "INSERT INTO redeem_attempts (code_id, user_id, guess, correct, attempted_at) VALUES (?, ?, ?, ?, ?)",
+            (code_id, interaction.user.id, guess[:100], 1 if correct else 0, time.time()),
+        )
+        db.commit()
+
+        if not correct:
+            await interaction.response.send_message(
+                f"❌ **Wrong!** `{guess}` is not the code. Try again!", ephemeral=True
+            )
+            return
+
+        # Correct — mark ended
+        cursor.execute(
+            "UPDATE redeem_codes SET ended = 1, winner_id = ? WHERE id = ?",
+            (interaction.user.id, code_id),
+        )
+        db.commit()
+
+        active_codes.pop(self.message_id, None)
+
+        # Give reward
+        reward_text = "**No reward**"
+        if reward > 0:
+            update_wallet(interaction.user.id, reward)
+            reward_text = f"**${reward:,}**"
+
+        # Update the original embed to show it was solved
+        try:
+            channel = bot.get_channel(channel_id)
+            if channel:
+                msg = await channel.fetch_message(self.message_id)
+                old_embed = msg.embeds[0] if msg.embeds else discord.Embed()
+                new_embed = discord.Embed(
+                    title="🎟️ Code Redeeming — SOLVED",
+                    description=(
+                        f"🏆 **{interaction.user.mention}** guessed the code!\n\n"
+                        f"**The code was:** `{real_code}`\n"
+                        f"**Reward:** {reward_text}"
+                    ),
+                    color=discord.Color.green(),
+                )
+                if old_embed.footer and old_embed.footer.text:
+                    new_embed.set_footer(text=old_embed.footer.text, icon_url=old_embed.footer.icon_url)
+                await msg.edit(embed=new_embed, view=None)
+        except Exception as e:
+            print(f"[redeem] failed to edit original embed: {e}")
+
+        await interaction.response.send_message(
+            f"🎉 **Correct!** You guessed the code `{real_code}` and won {reward_text}!",
+            ephemeral=True,
+        )
+
+
+class RedeemCodeView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(
+        label="Guess the Code",
+        style=discord.ButtonStyle.primary,
+        emoji="🎯",
+        custom_id="redeem_guess_button",
+    )
+    async def guess_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(GuessCodeModal(interaction.message.id))
+
+
+@bot.hybrid_command(name="createcode", aliases=["code"], description="Create a redeem code for users to guess (mods only)")
+@app_commands.describe(channel="Channel to post the code in (defaults to current channel)")
+async def createcode(ctx, channel: discord.TextChannel = None):
+    if ctx.guild is None:
+        embed = discord.Embed(description="❌ This command only works in a server.", color=discord.Color.red())
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    if not is_mod_or_owner(ctx.author):
+        embed = discord.Embed(
+            description="🔒 Only moderators can create redeem codes.",
+            color=discord.Color.red(),
+        )
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    target = channel or ctx.channel
+
+    if ctx.interaction:
+        await ctx.interaction.response.send_modal(CreateCodeModal(target))
+    else:
+        # Prefix commands can't open modals directly — reply with a hint
+        await ctx.send(
+            "⚠️ Please use the **slash command** `/createcode` to open the code creation form.",
+            delete_after=6,
+        )
+
+
+@bot.hybrid_command(name="endcode", description="Force-end the most recent active code in this channel (mods only)")
+async def endcode(ctx):
+    if not is_mod_or_owner(ctx.author):
+        embed = discord.Embed(description="🔒 Mods only.", color=discord.Color.red())
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # Find most recent active code in this guild
+    cursor.execute(
+        "SELECT id, message_id, channel_id, code FROM redeem_codes WHERE guild_id = ? AND ended = 0 ORDER BY created_at DESC LIMIT 1",
+        (ctx.guild.id,),
+    )
+    row = cursor.fetchone()
+    if not row:
+        embed = discord.Embed(description="❌ No active codes in this server.", color=discord.Color.orange())
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    code_id, message_id, channel_id, real_code = row
+    cursor.execute("UPDATE redeem_codes SET ended = 1 WHERE id = ?", (code_id,))
+    db.commit()
+    active_codes.pop(message_id, None)
+
+    try:
+        channel = bot.get_channel(channel_id)
+        if channel:
+            msg = await channel.fetch_message(message_id)
+            embed = discord.Embed(
+                title="🎟️ Code Redeeming — ENDED",
+                description=f"The code was ended by a moderator.\n\n**The code was:** `{real_code}`",
+                color=discord.Color.orange(),
+            )
+            await msg.edit(embed=embed, view=None)
+    except Exception as e:
+        print(f"[redeem] endcode edit failed: {e}")
+
+    embed = discord.Embed(description=f"✅ Ended code `{real_code}`.", color=discord.Color.green())
+    if ctx.interaction:
+        await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+    else:
+        await ctx.send(embed=embed)
+# =========================================================
 # RUN BOT
 # =========================================================
 
