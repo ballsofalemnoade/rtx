@@ -5000,7 +5000,7 @@ async def sync(ctx):
     try:
         await bot.tree.sync()
         embed = discord.Embed(
-            description="<:Sync:1557367041709576242> Commands have been synced globally!",
+            description="<a:Sync:1557367041709576242> Commands have been synced globally!",
             color=discord.Color.from_rgb(87, 242, 135),
         )
         if ctx.interaction:
