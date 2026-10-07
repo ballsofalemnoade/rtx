@@ -3311,63 +3311,44 @@ async def kick_error(ctx, error):
             await ctx.send(f"❌ {ctx.author.mention} You are missing Kick Members permission.")
 
 # =========================================================
-# MUTE COMMAND - SILENT FAIL FOR NON-MODS
+# MUTE COMMAND
 # =========================================================
 
-@bot.hybrid_command(name="mute", description="Mute a member")
+@bot.hybrid_command(name="mute", description="timeouts a member for specific time")
 @commands.has_permissions(manage_roles=True)
 async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str = "No reason provided"):
-    is_mod = ctx.author.guild_permissions.manage_roles or ctx.author.id in OWNER_IDS
-    
-    if not is_mod:
-        return
-    
     if ctx.guild.owner_id == member.id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ You cannot mute the server owner.", ephemeral=True)
-        return await ctx.send(f"❌ You cannot mute the server owner.")
-    
+        embed = discord.Embed(description="❌ You cannot mute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     if member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            if ctx.interaction:
-                return await ctx.interaction.response.send_message(f"❌ You cannot mute a staff member.", ephemeral=True)
-            return await ctx.send(f"❌ You cannot mute a staff member.")
-    
+            embed = discord.Embed(description="❌ You cannot mute a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+            return await ctx.send(embed=embed)
+
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ {member.mention} has a higher or equal role than me.", ephemeral=True)
-        return await ctx.send(f"❌ {member.mention} has a higher or equal role than me.")
+        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
 
     seconds = parse_duration(duration)
     if not seconds:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message("❌ Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.", ephemeral=True)
-        return await ctx.send("❌ Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.")
-    
+        embed = discord.Embed(description="❌ Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     try:
         await member.timeout(timedelta(seconds=seconds), reason=reason)
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "mute", reason)
-        
-        embed = discord.Embed(
-            title="✨ Successfully Muted",
-            color=discord.Color.green()
-        )
-        embed.add_field(name="Member", value=f"{member.mention}", inline=False)
-        embed.add_field(name="📄 Reason", value=reason, inline=False)
-        embed.add_field(name="⏱️ Duration", value=duration, inline=False)
-        embed.set_footer(text=f"Muted by {ctx.author.display_name}")
-        
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
-            
+        embed = discord.Embed(description=f"<:Mute:1557375243373514833> **{member.display_name}** has been muted for **{duration}**.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+        else: await ctx.send(embed=embed)
     except Exception as e:
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(f"❌ Failed to mute member: {e}", ephemeral=True)
-        else:
-            await ctx.send(f"❌ Failed to mute member: {e}")
-
+        embed = discord.Embed(description=f"❌ Failed to mute member: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx.send(embed=embed)
 # =========================================================
 # UNMUTE COMMAND - SILENT FAIL FOR NON-MODS
 # =========================================================
