@@ -56,6 +56,7 @@ async def whitelisted_predicate(interaction: discord.Interaction):
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.dm_messages = True
 
 bot = commands.Bot(
     command_prefix=["R!", "r!", ",,"],
