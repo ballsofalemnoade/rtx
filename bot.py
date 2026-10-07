@@ -10349,6 +10349,16 @@ async def fakenitro(ctx, member: discord.Member = None):
             await ctx.interaction.followup.send("✅ Sent!", ephemeral=True)
         except Exception:
             pass
+            DM_ALLOWED_COMMANDS = {"ghostping", "kiss"}
+
+
+@bot.check
+async def restrict_dms(ctx):
+    if ctx.guild is not None:
+        return True
+    if ctx.command and ctx.command.name in DM_ALLOWED_COMMANDS:
+        return True
+    return False
 # =========================================================
 # RUN BOT
 # =========================================================
