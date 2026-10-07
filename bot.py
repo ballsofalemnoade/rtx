@@ -10354,6 +10354,41 @@ async def restrict_dms(ctx):
         return True
     return False
 # =========================================================
+# STAFF RESPONSE EMBEDS (clean success/error style)
+# =========================================================
+
+def staff_success(message: str) -> discord.Embed:
+    return discord.Embed(
+        description=f"✅ {message}",
+        color=discord.Color.from_rgb(87, 242, 135),  # green like the screenshot
+    )
+
+
+def staff_error(message: str) -> discord.Embed:
+    return discord.Embed(
+        description=f"❌ {message}",
+        color=discord.Color.from_rgb(237, 66, 69),  # red
+    )
+
+
+def staff_info(message: str) -> discord.Embed:
+    return discord.Embed(
+        description=f"ℹ️ {message}",
+        color=discord.Color.from_rgb(88, 101, 242),  # blurple
+    )
+
+
+async def reply(ctx, embed: discord.Embed, ephemeral: bool = False):
+    """Send an embed from either prefix or slash context."""
+    if ctx.interaction:
+        try:
+            if not ctx.interaction.response.is_done():
+                return await ctx.interaction.response.send_message(embed=embed, ephemeral=ephemeral)
+            return await ctx.interaction.followup.send(embed=embed, ephemeral=ephemeral)
+        except Exception:
+            return
+    return await ctx.send(embed=embed)
+# =========================================================
 # RUN BOT
 # =========================================================
 
