@@ -10260,7 +10260,7 @@ async def on_ready():
         )
     )
 # =========================================================
-# FAKE NITRO COMMAND — SLASH + PREFIX (ULTIMATE FIX)
+# FAKE NITRO / FAKE BOOST COMMAND — matches real boost message
 # =========================================================
 
 FAKE_NITRO_LINKS = [
@@ -10271,128 +10271,80 @@ FAKE_NITRO_LINKS = [
     "https://discord.gift/mN4bV6cX8zL0kJ2h",
 ]
 
-# "Discord" but the 'o' is Greek omicron (U+03BF) — renders identically,
-# Discord's filter sees a different string. NFKC does NOT normalize this.
-NITRO_WEBHOOK_NAME = "Disc\u03bfrd"
 
-# Fallback names if Discord still rejects the primary one
-NITRO_FALLBACK_NAMES = ["Nitro", "Nitro Gift", None]  # None = no username override
-
-
-async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
-    """Return a reusable Nitro webhook for this channel."""
+async def _get_or_create_boost_webhook(channel: discord.TextChannel):
+    """Get or create a reusable webhook for the boost message."""
     try:
         existing = await channel.webhooks()
         for wh in existing:
-            if wh.name in (NITRO_WEBHOOK_NAME, "Nitro", "Nitro Gift", "Discord", "Disc\u200bord"):
-                try:
-                    if wh.user and wh.user.id == bot.user.id:
-                        return wh
-                except Exception:
-                    continue
+            if wh.name == "Boost" and wh.user and wh.user.id == bot.user.id:
+                return wh
     except Exception as e:
-        print(f"[fakenitro] listing webhooks failed: {e}")
+        print(f"[fakenitro] list webhooks failed: {e}")
 
-    for name in [NITRO_WEBHOOK_NAME] + NITRO_FALLBACK_NAMES:
-        if name is None:
-            continue
-        try:
-            wh = await channel.create_webhook(
-                name=name,
-                reason="Fake Nitro command webhook",
-            )
-            print(f"[fakenitro] created webhook {wh.id} in #{channel.name} as {name!r}")
-            return wh
-        except discord.HTTPException as e:
-            print(f"[fakenitro] failed with name {name!r}: {e}")
-            continue
-        except Exception as e:
-            print(f"[fakenitro] unexpected error with name {name!r}: {e}")
-            continue
-
-    return None
-
-
-async def _send_nitro_message(webhook, display_name: str, nitro_link: str):
-    """Try to send the fake boost message. Returns True on success."""
-    content = f"🎁 **{display_name}** just boosted the server!\n{nitro_link}"
-    avatar = "https://cdn.discordapp.com/emojis/949750669837475860.gif"
-
-    # Try each username option until one works
-    for name in [NITRO_WEBHOOK_NAME] + NITRO_FALLBACK_NAMES:
-        try:
-            kwargs = {
-                "content": content,
-                "avatar_url": avatar,
-                "wait": False,
-            }
-            if name is not None:
-                kwargs["username"] = name
-
-            await webhook.send(**kwargs)
-            return True
-        except discord.HTTPException as e:
-            print(f"[fakenitro] send failed with username={name!r}: {e}")
-            continue
-        except Exception as e:
-            print(f"[fakenitro] unexpected send error with username={name!r}: {e}")
-            continue
-
-    return False
+    try:
+        wh = await channel.create_webhook(name="Boost", reason="Fake boost webhook")
+        print(f"[fakenitro] created webhook {wh.id} in #{channel.name}")
+        return wh
+    except Exception as e:
+        print(f"[fakenitro] create webhook failed: {type(e).__name__}: {e}")
+        return None
 
 
 @bot.hybrid_command(
     name="fakenitro",
-    aliases=["nitro", "fn"],
-    description="Send a fake Nitro gift message",
+    aliases=["nitro", "fn", "fakeboost"],
+    description="Send a fake Nitro / boost message",
 )
-async def fakenitro(ctx):
-    print(f"[fakenitro] triggered by {ctx.author} in #{getattr(ctx.channel, 'name', 'DM')}")
-
+async def fakenitro(ctx, member: discord.Member = None):
     if ctx.interaction:
         await ctx.interaction.response.defer()
 
     if ctx.guild is None:
-        msg = "❌ This command only works in a server."
+        msg = "❌ Only works in a server."
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
     if not isinstance(ctx.channel, discord.TextChannel):
-        msg = "❌ This only works in text channels."
+        msg = "❌ Only works in text channels."
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    perms = ctx.channel.permissions_for(ctx.guild.me)
-    if not perms.manage_webhooks:
-        msg = (
-            "☄️ I need **Manage Webhooks** permission in this channel.\n"
-            "Grant it to my role and try again."
-        )
+    if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
+        msg = "☄️ I need **Manage Webhooks** permission here."
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
+    # The "booster" — the person who triggered it by default
+    booster = member or ctx.author
+
+    # Delete the prefix command message
     if not ctx.interaction and ctx.message:
         try:
             await ctx.message.delete()
         except Exception:
             pass
 
-    nitro_link = random.choice(FAKE_NITRO_LINKS)
-
-    webhook = await _get_or_create_nitro_webhook(ctx.channel)
+    webhook = await _get_or_create_boost_webhook(ctx.channel)
     if webhook is None:
-        msg = "❌ Couldn't create/find the webhook. Check Railway logs for the real reason."
+        msg = "❌ Couldn't create webhook — check Railway logs."
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    ok = await _send_nitro_message(webhook, ctx.author.display_name, nitro_link)
-
-    if not ok:
-        msg = "❌ All webhook send attempts failed. Check Railway logs."
+    try:
+        await webhook.send(
+            content="just boosted the server!",
+            username=booster.display_name,
+            avatar_url=booster.display_avatar.url,
+            wait=False,
+        )
+    except Exception as e:
+        print(f"[fakenitro] send failed: {type(e).__name__}: {e}")
+        msg = f"❌ Failed: `{str(e)[:150]}`"
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
