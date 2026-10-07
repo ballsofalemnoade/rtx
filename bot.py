@@ -2255,7 +2255,7 @@ class GhostPingControlView(discord.ui.View):
     description="Ghost ping a user with stop button."
 )
 @app_commands.describe(member="The member to ghost-ping", times="How many times (1-100)", message="Optional message after the mention")
-async def ghostping(ctx, member: discord.Member, times: int = 1, *, message: str = ""):
+async def ghostping(ctx, member: discord.User, times: int = 1, *, message: str = ""):
     if ctx.author.id not in OWNER_IDS:
         embed = discord.Embed(
             description="🔒 You're not allowed to use this command.",
