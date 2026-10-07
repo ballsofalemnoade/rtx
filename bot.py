@@ -3064,18 +3064,16 @@ KISS_GIFS = [
 ]
 
 @bot.hybrid_command(name="kiss", description="Kiss another user")
-async def kiss(ctx, member: discord.Member = None):
+async def kiss(ctx, member: discord.User = None):
     if not member:
         embed = discord.Embed(
             description="❌ You need to specify someone to kiss!",
             color=discord.Color.red()
         )
         if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
-    
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     if member.id == ctx.author.id:
         embed = discord.Embed(
             description=f"😘 {ctx.author.mention} kisses themselves... that's a bit weird but okay!",
@@ -3083,28 +3081,24 @@ async def kiss(ctx, member: discord.Member = None):
         )
         embed.set_image(url=random.choice(KISS_GIFS))
         if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
-        return
-    
+            return await ctx.interaction.response.send_message(embed=embed)
+        return await ctx.send(embed=embed)
+
     if member.bot:
         embed = discord.Embed(
             description="❌ You can't kiss a bot!",
             color=discord.Color.red()
         )
         if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
-    
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     embed = discord.Embed(
         description=f"💋 {ctx.author.mention} kisses {member.mention}! ❤️",
         color=discord.Color.from_rgb(255, 105, 180)
     )
     embed.set_image(url=random.choice(KISS_GIFS))
-    
+
     if ctx.interaction:
         await ctx.interaction.response.send_message(embed=embed)
     else:
