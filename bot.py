@@ -10260,7 +10260,7 @@ async def on_ready():
         )
     )
 # =========================================================
-# FAKE NITRO COMMAND — WEBHOOK VERSION (persists, no BOT tag)
+# FAKE NITRO COMMAND — SLASH + PREFIX
 # =========================================================
 
 FAKE_NITRO_LINKS = [
@@ -10273,8 +10273,7 @@ FAKE_NITRO_LINKS = [
 
 
 async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
-    """Return a reusable 'Discord' webhook for this channel, creating it once."""
-    # Look for an existing webhook we made
+    """Return a reusable 'Discord' webhook for this channel."""
     try:
         existing = await channel.webhooks()
         for wh in existing:
@@ -10283,7 +10282,6 @@ async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
     except Exception:
         pass
 
-    # Create a new one if none exists
     try:
         wh = await channel.create_webhook(
             name="Discord",
@@ -10298,37 +10296,57 @@ async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
         return None
 
 
-@bot.command(name="fakenitro", aliases=["nitro", "fn"])
+@bot.hybrid_command(
+    name="fakenitro",
+    aliases=["nitro", "fn"],
+    description="Send a fake Nitro gift message",
+)
 async def fakenitro(ctx):
     print(f"[fakenitro] triggered by {ctx.author} in #{getattr(ctx.channel, 'name', 'DM')}")
 
+    # Respond to slash immediately so we don't time out
+    if ctx.interaction:
+        await ctx.interaction.response.defer()
+
     if ctx.guild is None:
-        return await ctx.send("❌ This command only works in a server.")
+        msg = "❌ This command only works in a server."
+        if ctx.interaction:
+            return await ctx.interaction.followup.send(msg, ephemeral=True)
+        return await ctx.send(msg)
 
     if not isinstance(ctx.channel, discord.TextChannel):
-        return await ctx.send("❌ This only works in text channels.")
+        msg = "❌ This only works in text channels."
+        if ctx.interaction:
+            return await ctx.interaction.followup.send(msg, ephemeral=True)
+        return await ctx.send(msg)
 
     # Permission check
     if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
-        return await ctx.send(
-            "☄️ I need **Manage Webhooks** permission in this channel to do this.\n"
-            "Server Settings → Roles → my role → enable **Manage Webhooks**."
+        msg = (
+            "☄️ I need **Manage Webhooks** permission in this channel.\n"
+            "Grant it to my role and try again."
         )
+        if ctx.interaction:
+            return await ctx.interaction.followup.send(msg, ephemeral=True)
+        return await ctx.send(msg)
 
-    # Delete the user's command message (optional, needs Manage Messages)
-    try:
-        await ctx.message.delete()
-    except Exception:
-        pass
+    # Delete the prefix command message if that's how it was invoked
+    if not ctx.interaction and ctx.message:
+        try:
+            await ctx.message.delete()
+        except Exception:
+            pass
 
     nitro_link = random.choice(FAKE_NITRO_LINKS)
 
     webhook = await _get_or_create_nitro_webhook(ctx.channel)
     if webhook is None:
-        return await ctx.send("❌ Couldn't create/find the webhook. Check my permissions.")
+        msg = "❌ Couldn't create/find the webhook. Check my permissions."
+        if ctx.interaction:
+            return await ctx.interaction.followup.send(msg, ephemeral=True)
+        return await ctx.send(msg)
 
     try:
-        # Discord system-style: no BOT tag, official-looking
         await webhook.send(
             content=f"🎁 **{ctx.author.display_name}** just boosted the server!\n{nitro_link}",
             username="Discord",
@@ -10337,7 +10355,17 @@ async def fakenitro(ctx):
         )
     except Exception as e:
         print(f"[fakenitro] send failed: {e}")
-        await ctx.send(f"❌ Failed to send: `{str(e)[:150]}`")
+        msg = f"❌ Failed to send: `{str(e)[:150]}`"
+        if ctx.interaction:
+            return await ctx.interaction.followup.send(msg, ephemeral=True)
+        return await ctx.send(msg)
+
+    # Silent confirm for slash users (they only see this, not the channel message)
+    if ctx.interaction:
+        try:
+            await ctx.interaction.followup.send("✅ Sent!", ephemeral=True)
+        except Exception:
+            pass
 # =========================================================
 # RUN BOT
 # =========================================================
