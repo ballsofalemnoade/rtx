@@ -6906,8 +6906,6 @@ async def stealurl(ctx, *, input_text: str):
 # ROLE COMMAND
 # =========================================================
 
-TICK = "<:rynnx:1557367041709576242>"
-
 @bot.hybrid_command(name="role", description="Add roles to a member")
 @commands.has_permissions(manage_roles=True)
 async def role(ctx, member: discord.Member, *, role_name: str):
@@ -6985,7 +6983,7 @@ async def role(ctx, member: discord.Member, *, role_name: str):
         if role in member.roles:
             await member.remove_roles(role, reason=f"Removed by {ctx.author}")
             embed = discord.Embed(
-                description=f"{TICK} The role {role.mention} has been **removed** from {member.mention}.",
+                description=f"<:rynnx:1557365310963589172> The role {role.mention} has been **removed** from {member.mention}.",
                 color=discord.Color.from_rgb(87, 242, 135)
             )
             if ctx.interaction:
@@ -6995,7 +6993,7 @@ async def role(ctx, member: discord.Member, *, role_name: str):
         else:
             await member.add_roles(role, reason=f"Added by {ctx.author}")
             embed = discord.Embed(
-                description=f"{TICK} The role {role.mention} has been **added** to {member.mention}.",
+                description=f"<:rynnx:1557365310963589172> The role {role.mention} has been **added** to {member.mention}.",
                 color=discord.Color.from_rgb(87, 242, 135)
             )
             if ctx.interaction:
