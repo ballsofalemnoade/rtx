@@ -3394,56 +3394,38 @@ async def unmute(ctx, member: discord.Member):
             await ctx.send(f"❌ Failed to unmute member: {e}")
 
 # =========================================================
-# WARN COMMAND
+# WARN
 # =========================================================
 
-@bot.hybrid_command(name="warn", description="Warn a member")
+@bot.hybrid_command(name="warn", description="Warns a member")
 @commands.has_permissions(manage_messages=True)
 async def warn(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if ctx.guild.owner_id == member.id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ {ctx.author.mention} you cannot warn the server owner.", ephemeral=True)
-        return await ctx.send(f"❌ {ctx.author.mention} you cannot warn the server owner.")
-    
+        embed = discord.Embed(description="❌ You cannot warn the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            if ctx.interaction:
-                return await ctx.interaction.response.send_message(f"❌ {ctx.author.mention} you cannot warn a staff member.", ephemeral=True)
-            return await ctx.send(f"❌ {ctx.author.mention} you cannot warn a staff member.")
-    
+            embed = discord.Embed(description="❌ You cannot warn a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+            return await ctx.send(embed=embed)
+
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ {member.mention} has a higher or equal role than me, I cannot warn them.", ephemeral=True)
-        return await ctx.send(f"❌ {member.mention} has a higher or equal role than me, I cannot warn them.")
+        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
 
     cursor.execute("SELECT COUNT(*) FROM warnings WHERE user_id = ?", (member.id,))
     warn_count = cursor.fetchone()[0] + 1
-    
+
     cursor.execute("INSERT INTO warnings (user_id, moderator_id, reason) VALUES (?, ?, ?)", (member.id, ctx.author.id, reason))
     db.commit()
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "warn", reason)
-    
-    embed = discord.Embed(
-        title="⚠️ Successfully Warned",
-        color=discord.Color.orange()
-    )
-    embed.add_field(name="Member", value=f"{member.mention}", inline=False)
-    embed.add_field(name="📄 Reason", value=reason, inline=False)
-    embed.add_field(name="⚠️ Warning Count", value=f"#{warn_count}", inline=False)
-    embed.set_footer(text=f"Warned by {ctx.author.display_name}")
-    
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
-    else:
-        await ctx.send(embed=embed)
 
-@warn.error
-async def warn_error(ctx, error):
-    if isinstance(error, commands.MissingPermissions):
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(f"❌ {ctx.author.mention} You are missing Manage Messages permission.", ephemeral=True)
-        else:
-            await ctx.send(f"❌ {ctx.author.mention} You are missing Manage Messages permission.")
+    embed = discord.Embed(description=f"<:Warned:1557375803208110130> **{member.display_name}** has been warned (**#{warn_count}**).\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
             
 @bot.hybrid_command(name="avatar", description="Show a user's avatar")
 async def avatar(ctx, member: discord.Member = None):
