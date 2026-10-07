@@ -10260,7 +10260,7 @@ async def on_ready():
         )
     )
 # =========================================================
-# FAKE NITRO COMMAND
+# FAKE NITRO COMMAND — WEBHOOK VERSION (persists, no BOT tag)
 # =========================================================
 
 FAKE_NITRO_LINKS = [
@@ -10272,16 +10272,50 @@ FAKE_NITRO_LINKS = [
 ]
 
 
-@bot.command(name="fakenitro", aliases=["nitro", "fn"], description="Send a fake Nitro gift message")
+async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
+    """Return a reusable 'Discord' webhook for this channel, creating it once."""
+    # Look for an existing webhook we made
+    try:
+        existing = await channel.webhooks()
+        for wh in existing:
+            if wh.name == "Discord" and wh.user == bot.user:
+                return wh
+    except Exception:
+        pass
+
+    # Create a new one if none exists
+    try:
+        wh = await channel.create_webhook(
+            name="Discord",
+            avatar=await bot.user.display_avatar.read(),
+            reason="Fake Nitro command webhook",
+        )
+        return wh
+    except discord.Forbidden:
+        return None
+    except Exception as e:
+        print(f"[fakenitro] webhook create error: {e}")
+        return None
+
+
+@bot.command(name="fakenitro", aliases=["nitro", "fn"])
 async def fakenitro(ctx):
+    print(f"[fakenitro] triggered by {ctx.author} in #{getattr(ctx.channel, 'name', 'DM')}")
+
     if ctx.guild is None:
         return await ctx.send("❌ This command only works in a server.")
 
-    # Need manage_webhooks permission for the bot
-    if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
-        return await ctx.send("☄️ I need **Manage Webhooks** permission to do this!")
+    if not isinstance(ctx.channel, discord.TextChannel):
+        return await ctx.send("❌ This only works in text channels.")
 
-    # Delete the invoking message so it looks clean
+    # Permission check
+    if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
+        return await ctx.send(
+            "☄️ I need **Manage Webhooks** permission in this channel to do this.\n"
+            "Server Settings → Roles → my role → enable **Manage Webhooks**."
+        )
+
+    # Delete the user's command message (optional, needs Manage Messages)
     try:
         await ctx.message.delete()
     except Exception:
@@ -10289,29 +10323,21 @@ async def fakenitro(ctx):
 
     nitro_link = random.choice(FAKE_NITRO_LINKS)
 
+    webhook = await _get_or_create_nitro_webhook(ctx.channel)
+    if webhook is None:
+        return await ctx.send("❌ Couldn't create/find the webhook. Check my permissions.")
+
     try:
-        webhook = await ctx.channel.create_webhook(name="Fake Nitro")
-
-        # Webhook username + avatar mimic Discord's official system message
-        # Name is capped at 80 chars — Discord system shows "Discord" with the gift icon
+        # Discord system-style: no BOT tag, official-looking
         await webhook.send(
-            content=(
-                f"🎁 **{ctx.author.display_name}** just boosted the server!\n\n"
-                f"{nitro_link}"
-            ),
+            content=f"🎁 **{ctx.author.display_name}** just boosted the server!\n{nitro_link}",
             username="Discord",
-            avatar_url="https://cdn.discordapp.com/emojis/1238259293617913957.png",  # Nitro gift emoji style
+            avatar_url="https://cdn.discordapp.com/emojis/949750669837475860.gif",
+            wait=False,
         )
-
-        try:
-            await webhook.delete()
-        except Exception:
-            pass
-
-    except discord.Forbidden:
-        await ctx.send("❌ I don't have permission to create webhooks here!")
     except Exception as e:
-        await ctx.send(f"❌ Failed: `{str(e)[:150]}`")
+        print(f"[fakenitro] send failed: {e}")
+        await ctx.send(f"❌ Failed to send: `{str(e)[:150]}`")
 # =========================================================
 # RUN BOT
 # =========================================================
