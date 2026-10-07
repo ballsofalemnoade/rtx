@@ -1540,28 +1540,6 @@ async def on_message(message):
             )
 
         await message.reply(embed=embed, mention_author=False)
-            
-        if links:
-            cursor.execute("SELECT link_domain FROM allowed_links WHERE guild_id = ?", (message.guild.id,))
-            allowed = [row[0] for row in cursor.fetchall()]
-            
-            for link in links:
-                domain = extract_domain(link)
-                if domain and domain not in allowed:
-                    cursor.execute("SELECT mute_duration FROM link_punishment WHERE guild_id = ?", (message.guild.id,))
-                    row = cursor.fetchone()
-                    duration = row[0] if row else 300
-                    
-                    try:
-                        await message.delete()
-                        await message.author.timeout(timedelta(seconds=duration), reason=f"Sent unauthorized link: {domain}")
-                        await message.channel.send(f"🔇 {message.author.mention} was muted for {format_duration(duration)} for sending an unauthorized link: `{domain}`")
-                    except Exception as e:
-                        await message.channel.send(f"❌ Failed to mute {message.author.mention}: {e}")
-                    break
-
-    await bot.process_commands(message)
-
 # =========================================================
 # HELP COMMAND
 # =========================================================
