@@ -10260,7 +10260,7 @@ async def on_ready():
         )
     )
 # =========================================================
-# FAKE NITRO COMMAND — SLASH + PREFIX
+# FAKE NITRO COMMAND — SLASH + PREFIX (FIXED)
 # =========================================================
 
 FAKE_NITRO_LINKS = [
@@ -10274,25 +10274,35 @@ FAKE_NITRO_LINKS = [
 
 async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
     """Return a reusable 'Discord' webhook for this channel."""
+    # 1) Try to find an existing one
     try:
         existing = await channel.webhooks()
         for wh in existing:
-            if wh.name == "Discord" and wh.user == bot.user:
-                return wh
-    except Exception:
-        pass
+            if wh.name == "Discord":
+                try:
+                    if wh.user and wh.user.id == bot.user.id:
+                        return wh
+                except Exception:
+                    continue
+    except Exception as e:
+        print(f"[fakenitro] listing webhooks failed: {e}")
 
+    # 2) Create a fresh one (NO avatar param — we override per-message anyway)
     try:
         wh = await channel.create_webhook(
             name="Discord",
-            avatar=await bot.user.display_avatar.read(),
             reason="Fake Nitro command webhook",
         )
+        print(f"[fakenitro] created webhook {wh.id} in #{channel.name}")
         return wh
-    except discord.Forbidden:
+    except discord.Forbidden as e:
+        print(f"[fakenitro] Forbidden: {e}")
+        return None
+    except discord.HTTPException as e:
+        print(f"[fakenitro] HTTPException: {e} (status={e.status}, code={e.code})")
         return None
     except Exception as e:
-        print(f"[fakenitro] webhook create error: {e}")
+        print(f"[fakenitro] unexpected error: {type(e).__name__}: {e}")
         return None
 
 
@@ -10304,7 +10314,6 @@ async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
 async def fakenitro(ctx):
     print(f"[fakenitro] triggered by {ctx.author} in #{getattr(ctx.channel, 'name', 'DM')}")
 
-    # Respond to slash immediately so we don't time out
     if ctx.interaction:
         await ctx.interaction.response.defer()
 
@@ -10320,8 +10329,8 @@ async def fakenitro(ctx):
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    # Permission check
-    if not ctx.channel.permissions_for(ctx.guild.me).manage_webhooks:
+    perms = ctx.channel.permissions_for(ctx.guild.me)
+    if not perms.manage_webhooks:
         msg = (
             "☄️ I need **Manage Webhooks** permission in this channel.\n"
             "Grant it to my role and try again."
@@ -10330,7 +10339,6 @@ async def fakenitro(ctx):
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    # Delete the prefix command message if that's how it was invoked
     if not ctx.interaction and ctx.message:
         try:
             await ctx.message.delete()
@@ -10341,7 +10349,7 @@ async def fakenitro(ctx):
 
     webhook = await _get_or_create_nitro_webhook(ctx.channel)
     if webhook is None:
-        msg = "❌ Couldn't create/find the webhook. Check my permissions."
+        msg = "❌ Couldn't create/find the webhook. Check Railway logs for the real reason."
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
@@ -10354,13 +10362,12 @@ async def fakenitro(ctx):
             wait=False,
         )
     except Exception as e:
-        print(f"[fakenitro] send failed: {e}")
+        print(f"[fakenitro] send failed: {type(e).__name__}: {e}")
         msg = f"❌ Failed to send: `{str(e)[:150]}`"
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    # Silent confirm for slash users (they only see this, not the channel message)
     if ctx.interaction:
         try:
             await ctx.interaction.followup.send("✅ Sent!", ephemeral=True)
