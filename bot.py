@@ -10260,7 +10260,7 @@ async def on_ready():
         )
     )
 # =========================================================
-# FAKE NITRO COMMAND — SLASH + PREFIX (FIXED)
+# FAKE NITRO COMMAND — SLASH + PREFIX (ULTIMATE FIX)
 # =========================================================
 
 FAKE_NITRO_LINKS = [
@@ -10271,13 +10271,20 @@ FAKE_NITRO_LINKS = [
     "https://discord.gift/mN4bV6cX8zL0kJ2h",
 ]
 
+# "Discord" but the 'o' is Greek omicron (U+03BF) — renders identically,
+# Discord's filter sees a different string. NFKC does NOT normalize this.
+NITRO_WEBHOOK_NAME = "Disc\u03bfrd"
+
+# Fallback names if Discord still rejects the primary one
+NITRO_FALLBACK_NAMES = ["Nitro", "Nitro Gift", None]  # None = no username override
+
 
 async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
-    """Return a reusable 'Discord' webhook for this channel."""
+    """Return a reusable Nitro webhook for this channel."""
     try:
         existing = await channel.webhooks()
         for wh in existing:
-            if wh.name in ("Discord", "Disc\u200bord"):
+            if wh.name in (NITRO_WEBHOOK_NAME, "Nitro", "Nitro Gift", "Discord", "Disc\u200bord"):
                 try:
                     if wh.user and wh.user.id == bot.user.id:
                         return wh
@@ -10286,22 +10293,52 @@ async def _get_or_create_nitro_webhook(channel: discord.TextChannel):
     except Exception as e:
         print(f"[fakenitro] listing webhooks failed: {e}")
 
-    try:
-        wh = await channel.create_webhook(
-            name="Disc\u200bord",
-            reason="Fake Nitro command webhook",
-        )
-        print(f"[fakenitro] created webhook {wh.id} in #{channel.name}")
-        return wh
-    except discord.Forbidden as e:
-        print(f"[fakenitro] Forbidden: {e}")
-        return None
-    except discord.HTTPException as e:
-        print(f"[fakenitro] HTTPException: {e} (status={e.status}, code={e.code})")
-        return None
-    except Exception as e:
-        print(f"[fakenitro] unexpected error: {type(e).__name__}: {e}")
-        return None
+    for name in [NITRO_WEBHOOK_NAME] + NITRO_FALLBACK_NAMES:
+        if name is None:
+            continue
+        try:
+            wh = await channel.create_webhook(
+                name=name,
+                reason="Fake Nitro command webhook",
+            )
+            print(f"[fakenitro] created webhook {wh.id} in #{channel.name} as {name!r}")
+            return wh
+        except discord.HTTPException as e:
+            print(f"[fakenitro] failed with name {name!r}: {e}")
+            continue
+        except Exception as e:
+            print(f"[fakenitro] unexpected error with name {name!r}: {e}")
+            continue
+
+    return None
+
+
+async def _send_nitro_message(webhook, display_name: str, nitro_link: str):
+    """Try to send the fake boost message. Returns True on success."""
+    content = f"🎁 **{display_name}** just boosted the server!\n{nitro_link}"
+    avatar = "https://cdn.discordapp.com/emojis/949750669837475860.gif"
+
+    # Try each username option until one works
+    for name in [NITRO_WEBHOOK_NAME] + NITRO_FALLBACK_NAMES:
+        try:
+            kwargs = {
+                "content": content,
+                "avatar_url": avatar,
+                "wait": False,
+            }
+            if name is not None:
+                kwargs["username"] = name
+
+            await webhook.send(**kwargs)
+            return True
+        except discord.HTTPException as e:
+            print(f"[fakenitro] send failed with username={name!r}: {e}")
+            continue
+        except Exception as e:
+            print(f"[fakenitro] unexpected send error with username={name!r}: {e}")
+            continue
+
+    return False
 
 
 @bot.hybrid_command(
@@ -10352,16 +10389,10 @@ async def fakenitro(ctx):
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
 
-    try:
-        await webhook.send(
-            content=f"🎁 **{ctx.author.display_name}** just boosted the server!\n{nitro_link}",
-            username="Disc\u200bord",  # zero-width space → looks like "Discord"
-            avatar_url="https://cdn.discordapp.com/emojis/949750669837475860.gif",
-            wait=False,
-        )
-    except Exception as e:
-        print(f"[fakenitro] send failed: {type(e).__name__}: {e}")
-        msg = f"❌ Failed to send: `{str(e)[:150]}`"
+    ok = await _send_nitro_message(webhook, ctx.author.display_name, nitro_link)
+
+    if not ok:
+        msg = "❌ All webhook send attempts failed. Check Railway logs."
         if ctx.interaction:
             return await ctx.interaction.followup.send(msg, ephemeral=True)
         return await ctx.send(msg)
