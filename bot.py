@@ -3620,20 +3620,81 @@ async def poll(ctx, *, question: str):
     await msg.add_reaction("👍")
     await msg.add_reaction("👎")
 
-@bot.hybrid_command(name="say", description="Make the bot say something")
+# =========================================================
+# SAY COMMAND
+# =========================================================
+@bot.hybrid_command(name="say", description="makes the bot say something")
+@app_commands.describe(
+    content="The message text (optional if you attach a file)",
+    attachment="An image or file to send (optional)",
+    channel="Channel to send in (defaults to current channel)",
+)
 @commands.has_permissions(manage_messages=True)
-async def say(ctx, *, message: str):
-    if ctx.interaction:
-        await ctx.interaction.response.send_message("Message sent!", ephemeral=True)
-        await ctx.channel.send(message)
-    else:
-        if ctx.message:
-            try:
-                await ctx.message.delete()
-            except Exception:
-                pass
-        await ctx.send(message)
+async def say(
+    ctx,
+    content: str = None,
+    attachment: discord.Attachment = None,
+    channel: discord.TextChannel = None,
+):
+    target = channel or ctx.channel
 
+    # If prefix and user attached a file, grab it from the message
+    if attachment is None and not ctx.interaction and ctx.message and ctx.message.attachments:
+        attachment = ctx.message.attachments[0]
+
+    if not content and not attachment:
+        embed = discord.Embed(
+            description="❌ You need to provide text, an attachment, or both.",
+            color=discord.Color.from_rgb(237, 66, 69),
+        )
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        msg = await ctx.send(embed=embed)
+        await asyncio.sleep(5)
+        try:
+            await msg.delete()
+        except Exception:
+            pass
+        return
+
+    # Delete the prefix command message
+    if not ctx.interaction and ctx.message:
+        try:
+            await ctx.message.delete()
+        except Exception:
+            pass
+
+    # Send the actual message
+    try:
+        file = None
+        if attachment:
+            file = await attachment.to_file()
+        await target.send(content=content or "", file=file)
+    except Exception as e:
+        embed = discord.Embed(
+            description=f"❌ Failed to send: `{str(e)[:150]}`",
+            color=discord.Color.from_rgb(237, 66, 69),
+        )
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed, delete_after=5)
+
+    # Confirmation
+    confirm = discord.Embed(
+        description=f"<:rynnx:1557365310963589172> Message Sent in {target.mention}",
+        color=discord.Color.from_rgb(87, 242, 135),
+    )
+
+    if ctx.interaction:
+        await ctx.interaction.response.send_message(embed=confirm, ephemeral=True)
+    else:
+        msg = await ctx.send(embed=confirm)
+        await asyncio.sleep(5)
+        try:
+            await msg.delete()
+        except Exception:
+            pass
+            
 @bot.hybrid_command(name="embed", description="Send a custom embed message")
 @commands.has_permissions(manage_messages=True)
 async def custom_embed(ctx, *, content: str):
