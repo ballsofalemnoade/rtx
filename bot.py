@@ -2146,7 +2146,7 @@ class TrollPanelView(discord.ui.View):
 @app_commands.check(owner_only_predicate)
 async def whitelist(ctx, member: discord.Member):
     if ctx.author.id not in OWNER_IDS:
-        embed = discord.Embed(description="👑 Only the two bot owners can manage the Troll Panel whitelist.", color=discord.Color.red())
+        embed = discord.Embed(description="<:maria_winters:1559582938562306158> Only the two bot owners can manage the Troll Panel whitelist.", color=discord.Color.red())
         if ctx.interaction:
             return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
