@@ -10413,12 +10413,12 @@ from gtts import gTTS
 @app_commands.describe(message="The text to TTS")
 async def tts(ctx, *, message: str):
     if not message or not message.strip():
-        embed = discord.Embed(description="❌ Please provide text to say.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description="<:maria_winters:1559574601359425657> Please provide the text to tts.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     if len(message) > 300:
-        embed = discord.Embed(description="❌ Text too long (max 300 characters).", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description="<:maria_winters:1559574601359425657> Text too long (max 300 characters).", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -10434,17 +10434,20 @@ async def tts(ctx, *, message: str):
         file = discord.File(buf, filename="tts.mp3")
 
         embed = discord.Embed(
-            description="<:rynnx:1557365310963589172> Generated Your TTS!",
+            description="<:maria_winters:1559573820656980059> Generated Your TTS!",
             color=discord.Color.from_rgb(87, 242, 135),
         )
 
+        # Send embed FIRST, then the file — so the message appears above the voice clip
         if ctx.interaction:
-            await ctx.interaction.followup.send(embed=embed, file=file)
+            await ctx.interaction.followup.send(embed=embed)
+            await ctx.interaction.followup.send(file=file)
         else:
-            await ctx.send(embed=embed, file=file)
+            await ctx.send(embed=embed)
+            await ctx.send(file=file)
 
     except Exception as e:
-        embed = discord.Embed(description=f"❌ Failed to generate TTS: `{str(e)[:150]}`", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> Failed to generate TTS: `{str(e)[:150]}`", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction:
             await ctx.interaction.followup.send(embed=embed, ephemeral=True)
         else:
