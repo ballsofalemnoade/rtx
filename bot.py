@@ -6912,35 +6912,58 @@ async def stealurl(ctx, *, input_text: str):
 # ROLE COMMAND
 # =========================================================
 
-@bot.hybrid_command(name="role", description="Add roles to a member")
+async def role_autocomplete(
+    interaction: discord.Interaction,
+    current: str,
+) -> list[app_commands.Choice[str]]:
+    """Autocomplete role names for the current guild."""
+    if not interaction.guild:
+        return []
+
+    current_lower = current.lower()
+    choices = []
+
+    for role in reversed(interaction.guild.roles):
+        if role.is_default():
+            continue
+        if role.managed:
+            continue
+        if role >= interaction.guild.me.top_role:
+            continue
+
+        if current_lower in role.name.lower() or not current:
+            choices.append(
+                app_commands.Choice(name=role.name[:100], value=role.name[:100])
+            )
+
+        if len(choices) >= 25:
+            break
+
+    return choices
+
+
+@bot.hybrid_command(name="role", description="Add or remove a role from a member")
+@app_commands.describe(
+    member="The member to add/remove the role from",
+    role_name="The role to add or remove",
+)
+@app_commands.autocomplete(role_name=role_autocomplete)
 @commands.has_permissions(manage_roles=True)
 async def role(ctx, member: discord.Member, *, role_name: str):
     if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(
-            description=f"❌ {ctx.author.mention} you cannot modify roles of the server owner.",
-            color=discord.Color.from_rgb(237, 66, 69)
-        )
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot modify roles of the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(
-                description=f"❌ {ctx.author.mention} you cannot modify roles of a staff member.",
-                color=discord.Color.from_rgb(237, 66, 69)
-            )
-            if ctx.interaction:
-                return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+            embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot modify roles of a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
             return await ctx.send(embed=embed)
 
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(
-            description=f"❌ {member.mention} has a higher or equal role than me.",
-            color=discord.Color.from_rgb(237, 66, 69)
-        )
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     # --- SMART ROLE FINDER ---
@@ -6949,8 +6972,7 @@ async def role(ctx, member: discord.Member, *, role_name: str):
 
     mention_match = re.match(r'^<@&(\d+)>$', search)
     if mention_match:
-        role_id = int(mention_match.group(1))
-        role = ctx.guild.get_role(role_id)
+        role = ctx.guild.get_role(int(mention_match.group(1)))
 
     if not role:
         role = discord.utils.get(ctx.guild.roles, name=search)
@@ -6968,54 +6990,30 @@ async def role(ctx, member: discord.Member, *, role_name: str):
             role = discord.utils.find(lambda r: stripped.lower() in r.name.lower(), ctx.guild.roles)
 
     if not role:
-        embed = discord.Embed(
-            description=f"❌ Role `{role_name}` not found.",
-            color=discord.Color.from_rgb(237, 66, 69)
-        )
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        embed = discord.Embed(description=f"❌ Role `{role_name}` not found.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     if ctx.guild.me and role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(
-            description=f"❌ I cannot modify **{role.name}** — it's higher or equal to my highest role.",
-            color=discord.Color.from_rgb(237, 66, 69)
-        )
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        embed = discord.Embed(description=f"❌ I cannot modify **{role.name}** — it's higher or equal to my highest role.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     try:
         if role in member.roles:
             await member.remove_roles(role, reason=f"Removed by {ctx.author}")
-            embed = discord.Embed(
-                description=f"<:rynnx:1557365310963589172> The role {role.mention} has been **removed** from {member.mention}.",
-                color=discord.Color.from_rgb(87, 242, 135)
-            )
-            if ctx.interaction:
-                await ctx.interaction.response.send_message(embed=embed)
-            else:
-                await ctx.send(embed=embed)
+            embed = discord.Embed(description=f"<:rynnx:1557365310963589172> The role {role.mention} has been **removed** from {member.mention}.", color=discord.Color.from_rgb(87, 242, 135))
+            if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+            else: await ctx.send(embed=embed)
         else:
             await member.add_roles(role, reason=f"Added by {ctx.author}")
-            embed = discord.Embed(
-                description=f"<:rynnx:1557365310963589172> The role {role.mention} has been **added** to {member.mention}.",
-                color=discord.Color.from_rgb(87, 242, 135)
-            )
-            if ctx.interaction:
-                await ctx.interaction.response.send_message(embed=embed)
-            else:
-                await ctx.send(embed=embed)
-
+            embed = discord.Embed(description=f"<:rynnx:1557365310963589172> The role {role.mention} has been **added** to {member.mention}.", color=discord.Color.from_rgb(87, 242, 135))
+            if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+            else: await ctx.send(embed=embed)
     except Exception as e:
-        embed = discord.Embed(
-            description=f"❌ Failed to modify role: {e}",
-            color=discord.Color.from_rgb(237, 66, 69)
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
+        embed = discord.Embed(description=f"❌ Failed to modify role: {e}", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx.send(embed=embed)
 # =========================================================
 # SPANK COMMAND
 # =========================================================
