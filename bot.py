@@ -3144,7 +3144,7 @@ async def hack(ctx, member: discord.Member):
 async def require_server_mod(ctx):
     if not isinstance(ctx.author, discord.Member) or not _is_server_mod(ctx.author):
         embed = discord.Embed(
-            title="🛡️ Permission Denied",
+            title="<:maria_winters:1559574601359425657> Permission Denied",
             description="Only **server administrators or moderators** can use this command.",
             color=discord.Color.red()
         )
@@ -3183,18 +3183,18 @@ async def afk(ctx, *, reason: str = "AFK"):
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot ban the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot ban the owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot ban a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot ban a staff member.", color=discord.Color.from_rgb(237, 66, 69))
             if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
             return await ctx.send(embed=embed)
 
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me, I cannot ban them.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me, I cannot ban them.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3216,7 +3216,7 @@ async def unban(ctx, user_id: str):
         await ctx.guild.unban(user)
         
         embed = discord.Embed(
-            title="✅ Successfully Unbanned",
+            title="<:maria_winters:1559584981091614750> Successfully Unbanned",
             color=discord.Color.green()
         )
         embed.add_field(name="User", value=f"{user}", inline=False)
@@ -3229,39 +3229,34 @@ async def unban(ctx, user_id: str):
             
     except discord.NotFound:
         if ctx.interaction:
-            await ctx.interaction.response.send_message(f"❌ User ID `{user_id}` not found.", ephemeral=True)
+            await ctx.interaction.response.send_message(f"<:maria_winters:1559574601359425657> User ID `{user_id}` not found.", ephemeral=True)
         else:
-            await ctx.send(f"❌ User ID `{user_id}` not found.")
+            await ctx.send(f"<:maria_winters:1559574601359425657> User ID `{user_id}` not found.")
     except Exception:
         if ctx.interaction:
-            await ctx.interaction.response.send_message(f"❌ Could not find or unban that user. Check the user ID.", ephemeral=True)
+            await ctx.interaction.response.send_message(f"<:maria_winters:1559574601359425657> Could not find or unban that user. Check the user ID.", ephemeral=True)
         else:
-            await ctx.send(f"❌ Could not find or unban that user. Check the user ID.")
+            await ctx.send(f"<:maria_winters:1559574601359425657> Could not find or unban that user. Check the user ID.")
 
 @unban.error
 async def unban_error(ctx, error):
     if isinstance(error, commands.MissingPermissions):
         if ctx.interaction:
-            await ctx.interaction.response.send_message(f"❌ {ctx.author.mention} You are missing UnBan Members permission.", ephemeral=True)
+            await ctx.interaction.response.send_message(f"<:maria_winters:1559574601359425657> {ctx.author.mention} You are missing Moderation permission.", ephemeral=True)
         else:
-            await ctx.send(f"❌ {ctx.author.mention} You are missing UnBan Members permission.")
+            await ctx.send(f"<:maria_winters:1559574601359425657> {ctx.author.mention} You are missing Moderation permission.")
             
 @bot.hybrid_group(name="fake", description="Fake moderation commands")
 async def fake(ctx):
     pass
-
-@fake.command(name="ban", description="Fake-ban a member without actually banning them")
+# =========================================================
+# FAKE BANCOMMAND
+# =========================================================
+@fake.command(name="fakeban", description="Fake-ban a member without actually banning them")
 async def fake_ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    if not isinstance(ctx.author, discord.Member) or not _is_server_mod(ctx.author):
-        embed = discord.Embed(
-            title="🛡️ Permission Denied",
-            description="Only **server administrators or moderators** can use this command.",
-            color=discord.Color.red()
-        )
-        return await ctx.send(embed=embed, ephemeral=True)
-
+   
     embed = discord.Embed(
-        description=f"Banned **{member.display_name}**",
+        description=f"<a:maria_winters:1558862815127937035>Banned **{member.display_name}**",
         color=discord.Color.red()
     )
     if reason != "No reason provided":
@@ -3269,6 +3264,7 @@ async def fake_ban(ctx, member: discord.Member, *, reason: str = "No reason prov
     embed.set_footer(text=f"totally real trust by {ctx.author.display_name}")
 
     await ctx.send(embed=embed)
+    
 # =========================================================
 # KICK COMMAND
 # =========================================================
@@ -3277,18 +3273,18 @@ async def fake_ban(ctx, member: discord.Member, *, reason: str = "No reason prov
 @commands.has_permissions(kick_members=True)
 async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot kick the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot kick the server owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description=f"❌ {ctx.author.mention} you cannot kick a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot kick a staff member.", color=discord.Color.from_rgb(237, 66, 69))
             if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
             return await ctx.send(embed=embed)
 
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3305,35 +3301,35 @@ async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided
 @commands.has_permissions(manage_roles=True)
 async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str = "No reason provided"):
     if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description="❌ You cannot mute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description="<:maria_winters:1559574601359425657> You cannot mute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     if member.guild_permissions.manage_roles:
         if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description="❌ You cannot mute a staff member.", color=discord.Color.from_rgb(237, 66, 69))
+            embed = discord.Embed(description="<:maria_winters:1559574601359425657> You cannot mute a staff member.", color=discord.Color.from_rgb(237, 66, 69))
             if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
             return await ctx.send(embed=embed)
 
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     seconds = parse_duration(duration)
     if not seconds:
-        embed = discord.Embed(description="❌ Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description="<:maria_winters:1559574601359425657> Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     try:
         await member.timeout(timedelta(seconds=seconds), reason=reason)
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "mute", reason)
-        embed = discord.Embed(description=f"<:Mute:1557375243373514833> **{member.display_name}** has been muted for **{duration}**.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+        embed = discord.Embed(description=f"<:maria_winters:1559587361027916047> **{member.display_name}** has been muted for **{duration}**.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
     except Exception as e:
-        embed = discord.Embed(description=f"❌ Failed to mute member: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> Failed to mute member: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
