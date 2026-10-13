@@ -10402,6 +10402,54 @@ async def reply(ctx, embed: discord.Embed, ephemeral: bool = False):
             return
     return await ctx.send(embed=embed)
 # =========================================================
+# TTS COMMAND
+# =========================================================
+
+import io as _io
+from gtts import gTTS
+
+
+@bot.hybrid_command(name="tts", description="Convert text to a voice message")
+@app_commands.describe(message="The text to TTS")
+async def tts(ctx, *, message: str):
+    if not message or not message.strip():
+        embed = discord.Embed(description="❌ Please provide text to say.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    if len(message) > 300:
+        embed = discord.Embed(description="❌ Text too long (max 300 characters).", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    if ctx.interaction:
+        await ctx.interaction.response.defer()
+
+    try:
+        tts = gTTS(text=message, lang="en")
+        buf = _io.BytesIO()
+        tts.write_to_fp(buf)
+        buf.seek(0)
+
+        file = discord.File(buf, filename="tts.mp3")
+
+        embed = discord.Embed(
+            description="<:rynnx:1557365310963589172> Generated Your TTS!",
+            color=discord.Color.from_rgb(87, 242, 135),
+        )
+
+        if ctx.interaction:
+            await ctx.interaction.followup.send(embed=embed, file=file)
+        else:
+            await ctx.send(embed=embed, file=file)
+
+    except Exception as e:
+        embed = discord.Embed(description=f"❌ Failed to generate TTS: `{str(e)[:150]}`", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction:
+            await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+        else:
+            await ctx.send(embed=embed)
+# =========================================================
 # RUN BOT
 # =========================================================
 
