@@ -3333,49 +3333,32 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
-# UNMUTE COMMAND - SILENT FAIL FOR NON-MODS
+# UNMUTE
 # =========================================================
 
 @bot.hybrid_command(name="unmute", description="Remove a member's timeout")
 @commands.has_permissions(manage_roles=True)
 async def unmute(ctx, member: discord.Member):
-    is_mod = ctx.author.guild_permissions.manage_roles or ctx.author.id in OWNER_IDS
-    
-    if not is_mod:
-        return
-    
     if ctx.guild.owner_id == member.id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ You cannot unmute the server owner.", ephemeral=True)
-        return await ctx.send(f"❌ You cannot unmute the server owner.")
-    
+        embed = discord.Embed(description="❌ You cannot unmute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(f"❌ {member.mention} has a higher or equal role than me.", ephemeral=True)
-        return await ctx.send(f"❌ {member.mention} has a higher or equal role than me.")
-    
+        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     try:
         await member.timeout(None, reason=f"Unmuted by {ctx.author}")
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "unmute", "Removed timeout")
-        
-        embed = discord.Embed(
-            title="☄️ Successfully Unmuted",
-            color=discord.Color.green()
-        )
-        embed.add_field(name="Member", value=f"{member.mention}", inline=False)
-        embed.set_footer(text=f"Unmuted by {ctx.author.display_name}")
-        
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
-            
+        embed = discord.Embed(description=f"<:rynnx:1557365310963589172> Removed {member.mention}'s timeout.", color=discord.Color.from_rgb(87, 242, 135))
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+        else: await ctx.send(embed=embed)
     except Exception as e:
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(f"❌ Failed to unmute member: {e}", ephemeral=True)
-        else:
-            await ctx.send(f"❌ Failed to unmute member: {e}")
-
+        embed = discord.Embed(description=f"❌ Failed to unmute: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx.send(embed=embed)
 # =========================================================
 # WARN
 # =========================================================
