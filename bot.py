@@ -341,7 +341,7 @@ class CloseReasonModal(discord.ui.Modal, title="Close Ticket"):
 
     async def on_submit(self, interaction):
         await interaction.response.send_message(
-            "🔒 Closing ticket and generating transcript...",
+            "<a:maria_winters:1560245081859170375> Closing ticket and generating transcript...",
             ephemeral=True,
         )
         reason = self.reason.value.strip() or "No reason provided"
@@ -359,29 +359,29 @@ class TicketControlView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="🔒 Close", style=discord.ButtonStyle.danger, custom_id="ticket_close")
+    @discord.ui.button(label="<a:maria_winters:1560245081859170375> Close", style=discord.ButtonStyle.danger, custom_id="ticket_close")
     async def close_button(self, interaction, button):
         if not is_staff_member(interaction.user):
             ticket = get_ticket_by_channel(interaction.channel.id)
             if not ticket or ticket["user_id"] != interaction.user.id:
                 return await interaction.response.send_message(
-                    "❌ Only staff or the ticket opener can close this.",
+                    "<a:maria_winters:1559574601359425657> Only staff or the ticket opener can close this.",
                     ephemeral=True,
                 )
         await interaction.response.send_modal(
             CloseReasonModal(interaction.channel.id, interaction.user.id)
         )
 
-    @discord.ui.button(label="🙋 Claim", style=discord.ButtonStyle.success, custom_id="ticket_claim")
+    @discord.ui.button(label="<a:maria_winters:1559311953493626941> Claim", style=discord.ButtonStyle.success, custom_id="ticket_claim")
     async def claim_button(self, interaction, button):
         if not is_staff_member(interaction.user):
             return await interaction.response.send_message(
-                "❌ Only staff can claim tickets.",
+                "<a:maria_winters:1559574601359425657> Only staff can claim tickets.",
                 ephemeral=True,
             )
         ticket = get_ticket_by_channel(interaction.channel.id)
         if not ticket:
-            return await interaction.response.send_message("❌ Ticket not found.", ephemeral=True)
+            return await interaction.response.send_message("<a:maria_winters:1559574601359425657> Ticket not found.", ephemeral=True)
         if ticket["claimed_by"] == interaction.user.id:
             return await interaction.response.send_message(
                 "ℹ️ You've already claimed this ticket.",
@@ -395,7 +395,7 @@ class TicketControlView(discord.ui.View):
         except Exception:
             pass
         embed = discord.Embed(
-            description=f"🙋 {interaction.user.mention} has claimed this ticket.",
+            description=f"<a:maria_winters:1559311953493626941> {interaction.user.mention} has claimed this ticket.",
             color=discord.Color.green(),
         )
         await interaction.response.send_message(embed=embed)
@@ -405,7 +405,7 @@ class TicketPanelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="📩 Open a Ticket", style=discord.ButtonStyle.primary, custom_id="ticket_open")
+    @discord.ui.button(label="🎟️ Open a Ticket", style=discord.ButtonStyle.primary, custom_id="ticket_open")
     async def open_button(self, interaction, button):
         await interaction.response.defer(ephemeral=True)
 
@@ -416,14 +416,14 @@ class TicketPanelView(discord.ui.View):
         cfg = get_ticket_config(guild.id)
         if not cfg or not cfg["category_id"]:
             return await interaction.followup.send(
-                "❌ Ticket system isn't set up properly. Contact an admin.",
+                "<a:maria_winters:1559574601359425657> Ticket system isn't set up properly. Contact an admin.",
                 ephemeral=True,
             )
 
         category = guild.get_channel(cfg["category_id"])
         if not isinstance(category, discord.CategoryChannel):
             return await interaction.followup.send(
-                "❌ The configured ticket category no longer exists.",
+                "<a:maria_winters:1559574601359425657> The configured ticket category no longer exists.",
                 ephemeral=True,
             )
 
@@ -438,7 +438,7 @@ class TicketPanelView(discord.ui.View):
             channel = guild.get_channel(existing[0])
             if channel:
                 return await interaction.followup.send(
-                    f"ℹ️ You already have an open ticket: {channel.mention}",
+                    f"<a:maria_winters:1560246514000072785> You already have an open ticket: {channel.mention}",
                     ephemeral=True,
                 )
             else:
