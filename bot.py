@@ -2512,7 +2512,7 @@ async def kiss(ctx, member: discord.User = None):
 
     if member.id == ctx.author.id:
         embed = discord.Embed(
-            description=f"😘 {ctx.author.mention} kisses themselves... that's a bit weird but okay!",
+            description=f"{ctx.author.mention} **kisses themselves... that's a bit weird but okay!**",
             color=discord.Color.orange()
         )
         embed.set_image(url=random.choice(KISS_GIFS))
@@ -2522,7 +2522,7 @@ async def kiss(ctx, member: discord.User = None):
 
     if member.bot:
         embed = discord.Embed(
-            description="❌ You can't kiss a bot!",
+            description="❌ You can't kiss a bot weirdo!",
             color=discord.Color.red()
         )
         if ctx.interaction:
@@ -2530,7 +2530,7 @@ async def kiss(ctx, member: discord.User = None):
         return await ctx.send(embed=embed)
 
     embed = discord.Embed(
-        description=f"💋 {ctx.author.mention} kisses {member.mention}! ❤️",
+        description=f" {ctx.author.mention} **kisses** {member.mention}! ",
         color=discord.Color.from_rgb(255, 105, 180)
     )
     embed.set_image(url=random.choice(KISS_GIFS))
