@@ -971,29 +971,250 @@ async def on_message(message):
 
         await message.reply(embed=embed, mention_author=False)
 # =========================================================
-# HELP COMMAND
+# HELP COMMAND (Noctaly-style, ephemeral)
 # =========================================================
-@bot.hybrid_command(name="help", description="Display all available commands")
-async def help(ctx):
-    embed = discord.Embed(
-        title="📋 Rynx Bot Commands",
-        description="**Prefix:** `R!` or `/`",
-        color=discord.Color.from_rgb(30, 31, 34)
-    )
-    embed.add_field(name="💰 Economy", value="`balance`, `daily`, `work`, `gamble`, `dice`, `slots`, `crime`, `rob`, `pay`, `deposit`, `withdraw`", inline=False)
-    embed.add_field(name="🎉 Fun", value="`cf`, `8ball`, `gayrate`, `pp`, `iq`, `roast`, `kiss`, `pat`, `tape`, `gif`, `hack`, `mock`, `fraktur`, `pfps`, `memes`", inline=False)
-    embed.add_field(name="🎮 Games", value="`brainrot_dice`, `guess`, `country`, `debate`", inline=False)
-    embed.add_field(name="⚽ Football", value="`setchannel`, `spawn`, `collect`, `pack`, `sell`, `collection`, `trade`", inline=False)
-    embed.add_field(name="🛡️ Moderation", value="`ban`, `unban`, `kick`, `mute`, `unmute`, `warn`, `clear`, `purge`, `slowmode`, `poll`, `say`, `embed`, `snipe`, `editsnipe`, `avatar`, `afk`, `steal`", inline=False)
-    embed.add_field(name="👑 Admin", value="`goon`, `setup`, `backup`, `ghostping`, `fakenuke`", inline=False)
-    embed.add_field(name="🔗 Link Filter", value="`allowed add`, `allowed remove`, `allowed list`, `allowed enable`, `allowed disable`, `allowed time`", inline=False)
-    embed.set_footer(text=f"Requested by {ctx.author.display_name}")
-    
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-    else:
-        await ctx.send(embed=embed)
 
+HELP_CATEGORIES = {
+    "home": {
+        "emoji": "🏠",
+        "name": "Home",
+        "description": "The main menu.",
+    },
+    "economy": {
+        "emoji": "🏛️",
+        "name": "Economy",
+        "description": "Commands related to the economy.",
+        "commands": [
+            ("balance", "Check your balance"),
+            ("daily", "Claim your daily reward"),
+            ("work", "Work to earn cash"),
+            ("crime", "Commit a crime for cash"),
+            ("rob", "Try to rob someone"),
+            ("pay", "Pay another user"),
+            ("deposit", "Deposit into your bank"),
+            ("withdraw", "Withdraw from your bank"),
+            ("gamble", "Gamble your money"),
+            ("dice", "Roll dice for money"),
+            ("slots", "Play the slot machine"),
+            ("luck", "Check your luck"),
+            ("leaderboard", "Top 100 richest users"),
+        ],
+    },
+    "fun": {
+        "emoji": "🎉",
+        "name": "Fun",
+        "description": "Fun & social commands.",
+        "commands": [
+            ("cf", "Flip a coin"),
+            ("8ball", "Ask the magic 8ball"),
+            ("gayrate", "Check someone's gay %"),
+            ("pp", "Check someone's pp size"),
+            ("iq", "Check someone's IQ"),
+            ("roast", "Roast a user"),
+            ("kiss", "Kiss another user"),
+            ("pat", "Pat another user"),
+            ("slap", "Slap another user"),
+            ("hack", "Fake hack someone"),
+            ("mock", "Mock a member's text"),
+            ("fraktur", "Convert text to fraktur"),
+            ("pfps", "Get a random PFP"),
+            ("memes", "Get a random meme"),
+            ("marry", "Propose to someone"),
+            ("divorce", "Divorce your spouse"),
+        ],
+    },
+    "moderation": {
+        "emoji": "🛡️",
+        "name": "Moderation",
+        "description": "Commands to moderate the server.",
+        "commands": [
+            ("ban", "Ban a member"),
+            ("unban", "Unban a user by ID"),
+            ("kick", "Kick a member"),
+            ("mute", "Mute a member"),
+            ("unmute", "Remove a member's timeout"),
+            ("warn", "Warn a member"),
+            ("softban", "Ban + instantly unban"),
+            ("role", "Add/remove a role"),
+            ("setnick", "Change a member's nickname"),
+            ("clear", "Delete messages"),
+            ("purge", "Mass delete messages"),
+            ("slowmode", "Set channel slowmode"),
+            ("lock", "Lock a channel"),
+            ("unlock", "Unlock a channel"),
+            ("snipe", "View deleted messages"),
+            ("editsnipe", "View edited messages"),
+        ],
+    },
+    "games": {
+        "emoji": "🎮",
+        "name": "Games",
+        "description": "Games & mini-events.",
+        "commands": [
+            ("brainrot_dice", "2-player brainrot dice game"),
+            ("guess", "Guess a number vs AI or a player"),
+            ("triva", "Flag guessing game"),
+            ("hide", "Hide & seek invite"),
+            ("seek", "Guess where the hider is"),
+            ("hideleaderboard", "Hide & seek leaderboard"),
+            ("hidestats", "Your hide & seek stats"),
+        ],
+    },
+    "football": {
+        "emoji": "⚽",
+        "name": "Football",
+        "description": "Football card collection.",
+        "commands": [
+            ("setchannel", "Set spawn channel"),
+            ("spawn", "Spawn a player card"),
+            ("collect", "Collect the spawned card"),
+        ],
+    },
+    "tickets": {
+        "emoji": "🎟️",
+        "name": "Tickets",
+        "description": "Support ticket system.",
+        "commands": [
+            ("ticket setup", "Configure the ticket system"),
+            ("ticket panel", "Post the ticket panel"),
+            ("ticket add", "Add a user to the ticket"),
+            ("ticket remove", "Remove a user from the ticket"),
+            ("ticket close", "Close the current ticket"),
+            ("ticket settings", "View ticket config"),
+        ],
+    },
+    "utility": {
+        "emoji": "🔧",
+        "name": "Utility",
+        "description": "Useful utility commands.",
+        "commands": [
+            ("avatar", "Get a user's avatar"),
+            ("userinfo", "Get info about a user"),
+            ("serverinfo", "Get info about this server"),
+            ("afk", "Set your AFK status"),
+            ("weather", "Check the weather"),
+            ("translate", "Translate text"),
+            ("languages", "List supported languages"),
+            ("lyrics", "Get song lyrics"),
+            ("tts", "Text-to-speech voice message"),
+            ("poll", "Create a poll"),
+            ("say", "Make the bot say something"),
+            ("embed", "Send a custom embed"),
+            ("ping", "Check bot latency"),
+        ],
+    },
+    "admin": {
+        "emoji": "👑",
+        "name": "Admin",
+        "description": "Admin-only commands.",
+        "commands": [
+            ("setup", "Build server layout"),
+            ("backup create", "Backup this server"),
+            ("backup load", "Restore a backup"),
+            ("fakenuke", "Fake server nuke alert"),
+            ("goon", "Goon on someone (joke)"),
+            ("sync", "Force sync slash commands"),
+            ("whitelist", "Whitelist a troll panel user"),
+            ("unwhitelist", "Remove from troll whitelist"),
+            ("trollpanel", "Open the troll panel"),
+        ],
+    },
+}
+
+
+def build_help_embed(key: str) -> discord.Embed:
+    cat = HELP_CATEGORIES.get(key, HELP_CATEGORIES["home"])
+
+    if key == "home":
+        return discord.Embed(
+            title="🏠 Home",
+            description=(
+                "Use `/help <command>` to show information about a command.\n\n"
+                "Choose a category in the select menu below to show commands."
+            ),
+            color=discord.Color.blurple(),
+        )
+
+    embed = discord.Embed(
+        title=f"{cat['emoji']} {cat['name']}",
+        color=discord.Color.blurple(),
+    )
+
+    lines = [f"`/{cmd}` — *{desc}*" for cmd, desc in cat.get("commands", [])]
+
+    chunk = []
+    chunk_len = 0
+    for line in lines:
+        if chunk_len + len(line) + 1 > 1000:
+            embed.add_field(name="\u200b", value="\n".join(chunk), inline=False)
+            chunk = []
+            chunk_len = 0
+        chunk.append(line)
+        chunk_len += len(line) + 1
+
+    if chunk:
+        embed.add_field(name="\u200b", value="\n".join(chunk), inline=False)
+
+    embed.set_footer(text="Choose a category in the select menu to show commands.")
+    return embed
+
+
+class HelpSelect(discord.ui.Select):
+    def __init__(self, current="home"):
+        options = [
+            discord.SelectOption(
+                label=cat["name"],
+                description=cat["description"][:100],
+                emoji=cat["emoji"],
+                value=key,
+                default=(key == current),
+            )
+            for key, cat in HELP_CATEGORIES.items()
+        ]
+        super().__init__(placeholder="Select a category", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        key = self.values[0]
+        view = HelpView(current=key)
+        embed = build_help_embed(key)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+
+class HelpView(discord.ui.View):
+    def __init__(self, current="home"):
+        super().__init__(timeout=180)
+        self.add_item(HelpSelect(current=current))
+
+    @discord.ui.button(
+        label="Invite",
+        style=discord.ButtonStyle.link,
+        emoji="📨",
+        url="https://discord.com/oauth2/authorize?client_id=1539306892843683880&scope=bot+applications.commands&permissions=8",
+        row=1,
+    )
+    async def invite_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        pass
+
+    @discord.ui.button(
+        label="Support",
+        style=discord.ButtonStyle.link,
+        emoji="💬",
+        url="https://discord.gg/RUHWJnFWw",
+        row=1,
+    )
+    async def support_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        pass
+
+
+@bot.hybrid_command(name="help", description="Shows all of the commands")
+async def help_cmd(ctx):
+    embed = build_help_embed("home")
+    view = HelpView(current="home")
+
+    if ctx.interaction:
+        await ctx.interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    else:
+        await ctx.send(embed=embed, view=view)
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
