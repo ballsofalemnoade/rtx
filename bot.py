@@ -10134,6 +10134,87 @@ async def tts(ctx, *, message: str):
         else:
             await ctx.send(embed=embed)
 # =========================================================
+# CHANNEL HIDE COMMAND
+# =========================================================
+
+@bot.hybrid_command(name="channelhide", aliases=["chide", "hidefrom"], description="Hide a member from this channel temporarily")
+@app_commands.describe(
+    member="The member to hide",
+    duration="Duration (e.g. 10m, 1h)",
+    channel="The channel to hide them from (defaults to current)"
+)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True,
+    manage_roles=True, manage_messages=True, manage_channels=True,
+    manage_guild=True, moderate_members=True, manage_nicknames=True,
+)
+async def channelhide(ctx, member: discord.Member, duration: str, channel: discord.TextChannel = None):
+    # 1. Check if the user is staff
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+    # 2. Prevent hiding other staff members
+    if is_staff(member):
+        embed = discord.Embed(
+            description="<:maria_winters:1559574601359425657> You cannot hide a staff member.",
+            color=discord.Color.from_rgb(237, 66, 69)
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # 3. Prevent hiding the server owner
+    if ctx.guild.owner_id == member.id:
+        embed = discord.Embed(
+            description="<:maria_winters:1559574601359425657> You cannot hide the server owner.",
+            color=discord.Color.from_rgb(237, 66, 69)
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # 4. Parse the duration
+    seconds = parse_duration(duration)
+    if not seconds:
+        embed = discord.Embed(
+            description="<:maria_winters:1559574601359425657> Invalid duration. Use `10m`, `1h`, `1d`, etc.",
+            color=discord.Color.from_rgb(237, 66, 69)
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    target_channel = channel or ctx.channel
+
+    # 5. Apply the permission overwrite
+    try:
+        await target_channel.set_permissions(member, view_channel=False, reason=f"Hidden by {ctx.author} for {duration}")
+    except Exception as e:
+        embed = discord.Embed(
+            description=f"<:maria_winters:1559574601359425657> Failed to hide member: `{e}`",
+            color=discord.Color.from_rgb(237, 66, 69)
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # 6. Send success message
+    embed = discord.Embed(
+        description=f"<:rynnx:1557365310963589172> {member.mention} has been **hidden** from {target_channel.mention} for **{duration}**.",
+        color=discord.Color.from_rgb(87, 242, 135)
+    )
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
+
+    # 7. The background task to unhide them after the duration
+    async def unhide_task():
+        await asyncio.sleep(seconds)
+        try:
+            # Reset their permission overwrite to default (makes channel visible again)
+            await target_channel.set_permissions(member, overwrite=None, reason="Hide duration expired")
+        except Exception:
+            pass
+
+    bot.loop.create_task(unhide_task())
+# =========================================================
 # RUN BOT
 # =========================================================
 
