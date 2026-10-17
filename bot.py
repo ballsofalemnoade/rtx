@@ -3071,8 +3071,17 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
 # =========================================================
 
 @bot.hybrid_command(name="unmute", description="Remove a member's timeout")
-@commands.has_permissions(manage_roles=True)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True, manage_roles=True,
+    manage_messages=True, manage_channels=True, manage_guild=True,
+    moderate_members=True, manage_nicknames=True,
+)
 async def unmute(ctx, member: discord.Member):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
     if ctx.guild.owner_id == member.id:
         embed = discord.Embed(description="❌ You cannot unmute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
@@ -3086,7 +3095,7 @@ async def unmute(ctx, member: discord.Member):
     try:
         await member.timeout(None, reason=f"Unmuted by {ctx.author}")
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "unmute", "Removed timeout")
-        embed = discord.Embed(description=f"<:rynnx:1557365310963589172> Removed {member.mention}'s timeout.", color=discord.Color.from_rgb(87, 242, 135))
+        embed = discord.Embed(description=f"<:rynnx:1557365310963589172> Removed **{member.mention}'s** timeout.", color=discord.Color.from_rgb(87, 242, 135))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
     except Exception as e:
@@ -3098,8 +3107,17 @@ async def unmute(ctx, member: discord.Member):
 # =========================================================
 
 @bot.hybrid_command(name="warn", description="Warns a member")
-@commands.has_permissions(manage_messages=True)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True, manage_roles=True,
+    manage_messages=True, manage_channels=True, manage_guild=True,
+    moderate_members=True, manage_nicknames=True,
+)
 async def warn(ctx, member: discord.Member, *, reason: str = "No reason provided"):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
     if ctx.guild.owner_id == member.id:
         embed = discord.Embed(description="❌ You cannot warn the server owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
