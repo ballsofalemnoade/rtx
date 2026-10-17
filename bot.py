@@ -2877,6 +2877,7 @@ async def afk(ctx, *, reason: str = "AFK"):
 # =========================================================
 
 @bot.hybrid_command(name="ban", description="Ban a member from the server")
+@staff_only()
 @commands.has_permissions(ban_members=True)
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if ctx.guild.owner_id == member.id:
