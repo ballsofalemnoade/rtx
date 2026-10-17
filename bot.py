@@ -2895,42 +2895,25 @@ async def afk(ctx, *, reason: str = "AFK"):
 
 @bot.hybrid_command(name="ban", description="Ban a member from the server")
 @app_commands.default_permissions(
-    administrator=True,
-    ban_members=True,
-    kick_members=True,
-    manage_roles=True,
-    manage_messages=True,
-    manage_channels=True,
-    manage_guild=True,
-    moderate_members=True,
-    manage_nicknames=True,
+    administrator=True, ban_members=True, kick_members=True,
+    manage_roles=True, manage_messages=True, manage_channels=True,
+    manage_guild=True, moderate_members=True, manage_nicknames=True,
 )
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    # Runtime block for prefix (default_permissions only handles slash)
     if not is_staff(ctx.author):
-        embed = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
-        if ctx.interaction:
-            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
 
-    if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot ban the owner.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
-
-    if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
-        if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot ban a staff member.", color=discord.Color.from_rgb(237, 66, 69))
-            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-            return await ctx.send(embed=embed)
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me, I cannot ban them.", color=discord.Color.from_rgb(237, 66, 69))
+    error = can_moderate(ctx.author, member, ctx.guild)
+    if error:
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     await member.ban(reason=reason)
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "ban", reason)
+    
     embed = discord.Embed(description=f"<:banned:1557374684650283058> **{member.display_name}** has been banned.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
