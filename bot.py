@@ -3023,8 +3023,17 @@ async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided
 # =========================================================
 
 @bot.hybrid_command(name="mute", description="timeouts a member for specific time")
-@commands.has_permissions(manage_roles=True)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True, manage_roles=True,
+    manage_messages=True, manage_channels=True, manage_guild=True,
+    moderate_members=True, manage_nicknames=True,
+)
 async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str = "No reason provided"):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
     if ctx.guild.owner_id == member.id:
         embed = discord.Embed(description="<:maria_winters:1559574601359425657> You cannot mute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
