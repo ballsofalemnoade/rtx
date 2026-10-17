@@ -2872,14 +2872,31 @@ async def afk(ctx, *, reason: str = "AFK"):
         await ctx.interaction.response.send_message(embed=embed)
     else:
         await ctx.reply(embed=embed, mention_author=False)
+
 # =========================================================
 # BAN COMMAND
 # =========================================================
 
 @bot.hybrid_command(name="ban", description="Ban a member from the server")
-@staff_only()
-@commands.has_permissions(ban_members=True)
+@app_commands.default_permissions(
+    administrator=True,
+    ban_members=True,
+    kick_members=True,
+    manage_roles=True,
+    manage_messages=True,
+    manage_channels=True,
+    manage_guild=True,
+    moderate_members=True,
+    manage_nicknames=True,
+)
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
+    # Runtime block for prefix (default_permissions only handles slash)
+    if not is_staff(ctx.author):
+        embed = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction:
+            return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
     if ctx.guild.owner_id == member.id:
         embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot ban the owner.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
@@ -2900,7 +2917,7 @@ async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "ban", reason)
     embed = discord.Embed(description=f"<:banned:1557374684650283058> **{member.display_name}** has been banned.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
-    else: await ctx.send(embed=embed)    
+    else: await ctx.send(embed=embed)
 # =========================================================
 # UNBAN COMMAND
 # =========================================================
