@@ -2994,32 +2994,31 @@ async def fake_ban(ctx, member: discord.Member, *, reason: str = "No reason prov
     embed.set_footer(text=f"totally real trust by {ctx.author.display_name}")
 
     await ctx.send(embed=embed)
-    
 # =========================================================
 # KICK COMMAND
 # =========================================================
 
 @bot.hybrid_command(name="kick", description="Kick a member from the server")
-@commands.has_permissions(kick_members=True)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True, manage_roles=True,
+    manage_messages=True, manage_channels=True, manage_guild=True,
+    moderate_members=True, manage_nicknames=True,
+)
 async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot kick the server owner.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
+    if not ctx.author.guild_permissions.kick_members and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **kick members** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
 
-    if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
-        if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} you cannot kick a staff member.", color=discord.Color.from_rgb(237, 66, 69))
-            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-            return await ctx.send(embed=embed)
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+    error = can_moderate(ctx.author, member, ctx.guild, "kick")
+    if error:
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     await member.kick(reason=reason)
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "kick", reason)
+    
     embed = discord.Embed(description=f"<:rynnx:1557365310963589172> **{member.display_name}** has been kicked.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
@@ -3034,24 +3033,14 @@ async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided
     moderate_members=True, manage_nicknames=True,
 )
 async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str = "No reason provided"):
-    if not is_staff(ctx.author):
-        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+    if not ctx.author.guild_permissions.moderate_members and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **moderate members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
-    if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description="<:maria_winters:1559574601359425657> You cannot mute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
-
-    if member.guild_permissions.manage_roles:
-        if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description="<:maria_winters:1559574601359425657> You cannot mute a staff member.", color=discord.Color.from_rgb(237, 66, 69))
-            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-            return await ctx.send(embed=embed)
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+    error = can_moderate(ctx.author, member, ctx.guild, "mute")
+    if error:
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3064,6 +3053,7 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
     try:
         await member.timeout(timedelta(seconds=seconds), reason=reason)
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "mute", reason)
+        
         embed = discord.Embed(description=f"<:maria_winters:1559587361027916047> **{member.display_name}** has been muted for **{duration}**.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
@@ -3072,7 +3062,7 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
-# UNMUTE
+# UNMUTE COMMAND
 # =========================================================
 
 @bot.hybrid_command(name="unmute", description="Remove a member's timeout")
@@ -3082,24 +3072,21 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
     moderate_members=True, manage_nicknames=True,
 )
 async def unmute(ctx, member: discord.Member):
-    if not is_staff(ctx.author):
-        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+    if not ctx.author.guild_permissions.moderate_members and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **moderate members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
-    if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description="❌ You cannot unmute the server owner.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+    error = can_moderate(ctx.author, member, ctx.guild, "unmute")
+    if error:
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     try:
         await member.timeout(None, reason=f"Unmuted by {ctx.author}")
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "unmute", "Removed timeout")
+        
         embed = discord.Embed(description=f"<:rynnx:1557365310963589172> Removed **{member.mention}'s** timeout.", color=discord.Color.from_rgb(87, 242, 135))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
@@ -3108,7 +3095,7 @@ async def unmute(ctx, member: discord.Member):
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
-# WARN
+# WARN COMMAND
 # =========================================================
 
 @bot.hybrid_command(name="warn", description="Warns a member")
@@ -3118,24 +3105,14 @@ async def unmute(ctx, member: discord.Member):
     moderate_members=True, manage_nicknames=True,
 )
 async def warn(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    if not is_staff(ctx.author):
-        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+    if not ctx.author.guild_permissions.manage_messages and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **manage messages** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
-    if ctx.guild.owner_id == member.id:
-        embed = discord.Embed(description="❌ You cannot warn the server owner.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
-
-    if member.guild_permissions.kick_members or member.guild_permissions.ban_members or member.guild_permissions.manage_roles:
-        if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description="❌ You cannot warn a staff member.", color=discord.Color.from_rgb(237, 66, 69))
-            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-            return await ctx.send(embed=embed)
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"❌ {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
+    error = can_moderate(ctx.author, member, ctx.guild, "warn")
+    if error:
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3149,7 +3126,10 @@ async def warn(ctx, member: discord.Member, *, reason: str = "No reason provided
     embed = discord.Embed(description=f"<:Warned:1557375803208110130> **{member.display_name}** has been warned (**#{warn_count}**).\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
-            
+# =========================================================
+# MEMBERAVATAR COMMANDS
+# ========================================================= 
+
 @bot.hybrid_command(name="avatar", description="Show a user's avatar")
 async def avatar(ctx, member: discord.Member = None):
     target = member or ctx.author
@@ -9444,7 +9424,7 @@ async def wouldyourather(ctx):
     else:
         await ctx.send(embed=embed, view=view)
 # =========================================================
-# SOFTBAN COMMAND (prefix-only)
+# SOFTBAN COMMAND
 # =========================================================
 
 @bot.command(name="softban", aliases=["sb"])
@@ -9454,26 +9434,16 @@ async def wouldyourather(ctx):
     moderate_members=True, manage_nicknames=True,
 )
 async def softban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    if not is_staff(ctx.author):
-        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+    if not ctx.author.guild_permissions.ban_members and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **ban members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
-    if ctx.guild is None:
-        return await ctx.send("❌ This command only works in a server.")
-
-    if ctx.guild.owner_id == member.id:
-        return await ctx.send(f"❌ {ctx.author.mention} you cannot softban the server owner.")
-
-    if member.guild_permissions.ban_members or member.guild_permissions.administrator:
-        if ctx.author.id != ctx.guild.owner_id:
-            return await ctx.send(f"❌ {ctx.author.mention} you cannot softban a staff member.")
-
-    if member.id == ctx.author.id:
-        return await ctx.send(f"❌ {ctx.author.mention} you cannot softban yourself.")
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        return await ctx.send(f"❌ {member.mention} has a higher or equal role than me, I cannot softban them.")
+    error = can_moderate(ctx.author, member, ctx.guild, "softban")
+    if error:
+        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
 
     try:
         await member.ban(reason=f"[Softban] {reason} | By {ctx.author}", delete_message_seconds=604800)
