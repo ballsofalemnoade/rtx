@@ -6117,334 +6117,157 @@ async def fraktur(ctx, *, text: str):
 
 ADMIN_PAY_USERS = OWNER_IDS
 
-@bot.hybrid_command(name="adminpay", aliases=["ownerspay"], description="Admin command to give money to any user")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="adminpay", aliases=["ownerspay"], description="Give money to any user")
+@app_commands.default_permissions(administrator=True)
 async def adminpay(ctx, member: discord.Member, amount: int):
-    if ctx.author.id not in ADMIN_PAY_USERS:
-        embed = discord.Embed(
-            description="❌ You do not have permission to use this command!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+    if not await is_owner(ctx): return
     
     if amount <= 0:
-        embed = discord.Embed(
-            description="❌ Amount must be greater than zero.",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description="❌ Amount must be greater than zero.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     update_wallet(member.id, amount)
-    
     new_wallet, new_bank, new_luck = get_user_econ(member.id)
     
-    embed = discord.Embed(
-        title="💰 Admin Payment",
-        description=f"**${amount:,}** has been added to {member.mention}'s wallet!",
-        color=discord.Color.green()
-    )
-    embed.add_field(
-        name="New Balance",
-        value=f"🪙 Wallet: ${new_wallet:,}\n🏦 Bank: ${new_bank:,}",
-        inline=False
-    )
+    embed = discord.Embed(title="💰 Admin Payment", description=f"**${amount:,}** added to {member.mention}'s wallet!", color=discord.Color.green())
+    embed.add_field(name="New Balance", value=f"🪙 Wallet: ${new_wallet:,}\n🏦 Bank: ${new_bank:,}", inline=False)
     embed.set_footer(text=f"Transaction by {ctx.author.display_name}")
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else:
         if ctx.message:
-            try:
-                await ctx.message.delete()
-            except Exception:
-                pass
+            try: await ctx.message.delete()
+            except: pass
         await ctx.send(embed=embed)
 
-@bot.hybrid_command(name="adminset", aliases=["ownersset"], description="Admin command to set a user's exact wallet balance (including 0)")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="adminset", aliases=["ownersset"], description="Set a user's exact wallet balance")
+@app_commands.default_permissions(administrator=True)
 async def adminset(ctx, member: discord.Member, amount: int):
-    if ctx.author.id not in ADMIN_PAY_USERS:
-        embed = discord.Embed(
-            description="❌ You do not have permission to use this command!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+    if not await is_owner(ctx): return
     
     if amount < 0:
-        embed = discord.Embed(
-            description="❌ Amount cannot be negative.",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
-    
-    wallet, bank, luck = get_user_econ(member.id)
+        embed = discord.Embed(description="❌ Amount cannot be negative.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     cursor.execute("UPDATE users SET wallet = ? WHERE user_id = ?", (amount, member.id))
     db.commit()
-    
     new_wallet, new_bank, new_luck = get_user_econ(member.id)
     
-    embed = discord.Embed(
-        title="💰 Admin Wallet Set",
-        description=f"{member.mention}'s wallet has been set to **${amount:,}**!",
-        color=discord.Color.blue()
-    )
-    embed.add_field(
-        name="Updated Balance",
-        value=f"🪙 Wallet: ${new_wallet:,}\n🏦 Bank: ${new_bank:,}",
-        inline=False
-    )
+    embed = discord.Embed(title="💰 Admin Wallet Set", description=f"{member.mention}'s wallet set to **${amount:,}**!", color=discord.Color.blue())
+    embed.add_field(name="Updated Balance", value=f"🪙 Wallet: ${new_wallet:,}\n🏦 Bank: ${new_bank:,}", inline=False)
     embed.set_footer(text=f"Transaction by {ctx.author.display_name}")
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else:
         if ctx.message:
-            try:
-                await ctx.message.delete()
-            except Exception:
-                pass
+            try: await ctx.message.delete()
+            except: pass
         await ctx.send(embed=embed)
-
-@bot.hybrid_command(name="adminsetbank", aliases=["ownerssetbank"], description="Admin command to set a user's exact bank balance (including 0)")
-@app_commands.check(owner_only_predicate)
+        
+@bot.hybrid_command(name="adminsetbank", aliases=["ownerssetbank"], description="Set a user's exact bank balance")
+@app_commands.default_permissions(administrator=True)
 async def adminsetbank(ctx, member: discord.Member, amount: int):
-    if ctx.author.id not in ADMIN_PAY_USERS:
-        embed = discord.Embed(
-            description="❌ You do not have permission to use this command!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+    if not await is_owner(ctx): return
     
     if amount < 0:
-        embed = discord.Embed(
-            description="❌ Amount cannot be negative.",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description="❌ Amount cannot be negative.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     cursor.execute("UPDATE users SET bank = ? WHERE user_id = ?", (amount, member.id))
     db.commit()
-    
     new_wallet, new_bank, new_luck = get_user_econ(member.id)
     
-    embed = discord.Embed(
-        title="🏦 Admin Bank Set",
-        description=f"{member.mention}'s bank has been set to **${amount:,}**!",
-        color=discord.Color.blue()
-    )
-    embed.add_field(
-        name="Updated Balance",
-        value=f"🪙 Wallet: ${new_wallet:,}\n🏦 Bank: ${new_bank:,}",
-        inline=False
-    )
+    embed = discord.Embed(title="🏦 Admin Bank Set", description=f"{member.mention}'s bank set to **${amount:,}**!", color=discord.Color.blue())
+    embed.add_field(name="Updated Balance", value=f"🪙 Wallet: ${new_wallet:,}\n🏦 Bank: ${new_bank:,}", inline=False)
     embed.set_footer(text=f"Transaction by {ctx.author.display_name}")
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else:
         if ctx.message:
-            try:
-                await ctx.message.delete()
-            except Exception:
-                pass
+            try: await ctx.message.delete()
+            except: pass
         await ctx.send(embed=embed)
-
-@bot.hybrid_command(name="adminrob", aliases=["ownersrob"], description="Admin command to rob any user (never fails)")
-@app_commands.check(owner_only_predicate)
+        
+@bot.hybrid_command(name="adminrob", aliases=["ownersrob"], description="Rob any user (never fails)")
+@app_commands.default_permissions(administrator=True)
 async def adminrob(ctx, member: discord.Member):
-    if ctx.author.id not in ADMIN_PAY_USERS:
-        embed = discord.Embed(
-            description="❌ You do not have permission to use this command!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+    if not await is_owner(ctx): return
     
     if member.id == ctx.author.id:
-        embed = discord.Embed(
-            description="❌ You can't rob yourself!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description="❌ You can't rob yourself!", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     wallet, bank, luck = get_user_econ(member.id)
     total_money = wallet + bank
-    
     if total_money <= 0:
-        embed = discord.Embed(
-            description=f"❌ {member.mention} has no money to rob! They're broke!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
-    
-    stolen_wallet = wallet
-    stolen_bank = bank
+        embed = discord.Embed(description=f"❌ {member.mention} has no money.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     cursor.execute("UPDATE users SET wallet = 0, bank = 0 WHERE user_id = ?", (member.id,))
     db.commit()
-    
-    total_stolen = stolen_wallet + stolen_bank
-    update_wallet(ctx.author.id, total_stolen)
+    update_wallet(ctx.author.id, total_money)
     
     admin_wallet, admin_bank, admin_luck = get_user_econ(ctx.author.id)
-    
-    embed = discord.Embed(
-        title="🔫 Admin Robbery",
-        description=f"**{ctx.author.mention}** successfully robbed **{member.mention}** and stole **${total_stolen:,}**!",
-        color=discord.Color.red()
-    )
-    embed.add_field(
-        name="💰 Stolen Breakdown",
-        value=f"🪙 From Wallet: ${stolen_wallet:,}\n🏦 From Bank: ${stolen_bank:,}",
-        inline=False
-    )
-    embed.add_field(
-        name=f"📊 {member.display_name}'s New Balance",
-        value=f"🪙 Wallet: $0\n🏦 Bank: $0",
-        inline=True
-    )
-    embed.add_field(
-        name=f"📊 {ctx.author.display_name}'s New Balance",
-        value=f"🪙 Wallet: ${admin_wallet:,}\n🏦 Bank: ${admin_bank:,}",
-        inline=True
-    )
+    embed = discord.Embed(title="🔫 Admin Robbery", description=f"**{ctx.author.mention}** robbed **{member.mention}** for **${total_money:,}**!", color=discord.Color.red())
+    embed.add_field(name="💰 Stolen", value=f"🪙 Wallet: ${wallet:,}\n🏦 Bank: ${bank:,}", inline=False)
+    embed.add_field(name=f"📊 {ctx.author.display_name}'s Balance", value=f"🪙 Wallet: ${admin_wallet:,}\n🏦 Bank: ${admin_bank:,}", inline=True)
     embed.set_footer(text=f"Admin robbery by {ctx.author.display_name}")
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else:
         if ctx.message:
-            try:
-                await ctx.message.delete()
-            except Exception:
-                pass
+            try: await ctx.message.delete()
+            except: pass
         await ctx.send(embed=embed)
 
-@bot.hybrid_command(name="adminrobamount", aliases=["ownersrobamount"], description="Admin command to rob a specific amount")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="adminrobamount", aliases=["ownersrobamount"], description="Rob a specific amount")
+@app_commands.default_permissions(administrator=True)
 async def adminrobamount(ctx, member: discord.Member, amount: int):
-    if ctx.author.id not in ADMIN_PAY_USERS:
-        embed = discord.Embed(
-            description="❌ You do not have permission to use this command!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+    if not await is_owner(ctx): return
     
     if member.id == ctx.author.id:
-        embed = discord.Embed(
-            description="❌ You can't rob yourself!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description="❌ You can't rob yourself!", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     if amount <= 0:
-        embed = discord.Embed(
-            description="❌ Amount must be greater than zero.",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description="❌ Amount must be > 0.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     wallet, bank, luck = get_user_econ(member.id)
-    
     if wallet < amount:
-        embed = discord.Embed(
-            description=f"❌ {member.mention} only has **${wallet:,}** in their wallet, not enough to steal **${amount:,}**.",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description=f"❌ {member.mention} only has **${wallet:,}** in wallet.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     cursor.execute("UPDATE users SET wallet = wallet - ? WHERE user_id = ?", (amount, member.id))
     db.commit()
-    
     update_wallet(ctx.author.id, amount)
     
-    new_victim_wallet, new_victim_bank, new_victim_luck = get_user_econ(member.id)
     admin_wallet, admin_bank, admin_luck = get_user_econ(ctx.author.id)
+    new_victim_wallet, new_victim_bank, _ = get_user_econ(member.id)
     
-    embed = discord.Embed(
-        title="🔫 Admin Robbery (Specific Amount)",
-        description=f"**{ctx.author.mention}** successfully robbed **${amount:,}** from {member.mention}'s wallet!",
-        color=discord.Color.red()
-    )
-    embed.add_field(
-        name=f"📊 {member.display_name}'s New Balance",
-        value=f"🪙 Wallet: ${new_victim_wallet:,}\n🏦 Bank: ${new_victim_bank:,}",
-        inline=True
-    )
-    embed.add_field(
-        name=f"📊 {ctx.author.display_name}'s New Balance",
-        value=f"🪙 Wallet: ${admin_wallet:,}\n🏦 Bank: ${admin_bank:,}",
-        inline=True
-    )
-    embed.set_footer(text=f"Admin robbery by {ctx.author.display_name}")
+    embed = discord.Embed(title="🔫 Admin Robbery", description=f"**{ctx.author.mention}** robbed **${amount:,}** from {member.mention}!", color=discord.Color.red())
+    embed.add_field(name=f"📊 {member.display_name}'s Balance", value=f"🪙 Wallet: ${new_victim_wallet:,}", inline=True)
+    embed.add_field(name=f"📊 {ctx.author.display_name}'s Balance", value=f"🪙 Wallet: ${admin_wallet:,}", inline=True)
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else:
         if ctx.message:
-            try:
-                await ctx.message.delete()
-            except Exception:
-                pass
+            try: await ctx.message.delete()
+            except: pass
         await ctx.send(embed=embed)
-
 # =========================================================
 # EMOJI STEALER COMMAND
 # =========================================================
 
-@bot.hybrid_command(name="stealurl", aliases=["surl", "steal"], description="Steal an emoji using its Discord link, ID, or the emoji itself")
+@bot.hybrid_command(name="stealemoji", aliases=["surl", "steal"], description="Steal an emoji using its Discord link, ID, or the emoji itself")
 @commands.has_permissions(administrator=True)
 async def stealurl(ctx, *, input_text: str):
     if not ctx.author.guild_permissions.administrator:
