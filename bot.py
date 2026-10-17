@@ -78,19 +78,29 @@ def can_moderate(moderator: discord.Member, target: discord.Member, guild: disco
     """Returns an error message if the moderator cannot punish the target, otherwise returns None."""
     if moderator.id == target.id:
         return f"You cannot {action} yourself."
+    
     if target.id == guild.owner_id:
         return f"You cannot {action} the server owner."
-    if moderator.id == guild.owner_id:
-        return None  # Server owner can do anything
-
-    # Hierarchy checks
-    if moderator.top_role <= target.top_role:
-        return f"You cannot {action} a higher-up."
     
+    # Server owner bypasses role hierarchy checks, but bot still needs high enough role
+    if moderator.id == guild.owner_id:
+        if guild.me.top_role <= target.top_role:
+            return f"I cannot {action} {target.mention} because their role is higher than mine."
+        return None
+
+    # Same role check
+    if moderator.top_role == target.top_role:
+        return f"You cannot {action} {target.mention} because both members have the same role."
+    
+    # Higher role check
+    if moderator.top_role < target.top_role:
+        return f"You cannot {action} {target.mention} because their role is higher than yours."
+    
+    # Bot role check
     if guild.me.top_role <= target.top_role:
         return f"I cannot {action} {target.mention} because their role is higher than mine."
 
-    return None  # Allowed
+    return None
 # =========================================================
 # BOT TOKEN
 # =========================================================
@@ -110,7 +120,6 @@ async def whitelisted_predicate(interaction: discord.Interaction):
     cursor.execute("SELECT 1 FROM troll_whitelist WHERE user_id = ?", (interaction.user.id,))
     is_whitelisted = cursor.fetchone() is not None
     return interaction.user.id in OWNER_IDS or is_whitelisted
-
 # =========================================================
 # BOT SETUP
 # =========================================================
@@ -2886,7 +2895,6 @@ async def afk(ctx, *, reason: str = "AFK"):
         await ctx.interaction.response.send_message(embed=embed)
     else:
         await ctx.reply(embed=embed, mention_author=False)
-
 # =========================================================
 # BAN COMMAND
 # =========================================================
@@ -2898,8 +2906,8 @@ async def afk(ctx, *, reason: str = "AFK"):
     manage_guild=True, moderate_members=True, manage_nicknames=True,
 )
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
-    if not is_staff(ctx.author):
-        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+    if not ctx.author.guild_permissions.ban_members and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **ban members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
