@@ -27,6 +27,19 @@ OWNER_IDS = {
     1286560808528117820
 }
 
+async def is_owner(ctx) -> bool:
+    """Checks if the user is a bot owner. Returns False and sends an error embed if not."""
+    if ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(
+            description=f"<:maria_winters:1559574601359425657> {ctx.author.mention} this is acessable to bot creators only",
+            color=discord.Color.from_rgb(237, 66, 69)
+        )
+        if ctx.interaction:
+            await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        else:
+            await ctx.send(embed=e)
+        return False
+    return True
 # =========================================================
 # STAFF SYSTEM — CARL-BOT STYLE
 # =========================================================
