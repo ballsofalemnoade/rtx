@@ -969,7 +969,9 @@ async def on_message(message):
                 inline=False
             )
 
-        await message.reply(embed=embed, mention_author=False)
+                await message.reply(embed=embed, mention_author=False)
+
+    await bot.process_commands(message)
 # =========================================================
 # HELP COMMAND (Noctaly-style, ephemeral)
 # =========================================================
