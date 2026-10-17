@@ -2903,7 +2903,7 @@ async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
-    error = can_moderate(ctx.author, member, ctx.guild)
+    error = can_moderate(ctx.author, member, ctx.guild, "ban")
     if error:
         embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
