@@ -1185,25 +1185,21 @@ class HelpView(discord.ui.View):
         super().__init__(timeout=180)
         self.add_item(HelpSelect(current=current))
 
-    @discord.ui.button(
-        label="Invite",
-        style=discord.ButtonStyle.link,
-        emoji="📨",
-        url="https://discord.com/oauth2/authorize?client_id=1539306892843683880&scope=bot+applications.commands&permissions=8",
-        row=1,
-    )
-    async def invite_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        pass
+        self.add_item(discord.ui.Button(
+            label="Invite",
+            style=discord.ButtonStyle.link,
+            emoji="📨",
+            url="https://discord.com/oauth2/authorize?client_id=1539306892843683880&scope=bot+applications.commands&permissions=8",
+            row=1,
+        ))
 
-    @discord.ui.button(
-        label="Support",
-        style=discord.ButtonStyle.link,
-        emoji="💬",
-        url="https://discord.gg/RUHWJnFWw",
-        row=1,
-    )
-    async def support_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        pass
+        self.add_item(discord.ui.Button(
+            label="Support",
+            style=discord.ButtonStyle.link,
+            emoji="💬",
+            url="https://discord.gg/RUHWJnFWw",
+            row=1,
+        ))
 
 
 @bot.hybrid_command(name="help", description="Shows all of the commands")
@@ -1215,6 +1211,7 @@ async def help_cmd(ctx):
         await ctx.interaction.response.send_message(embed=embed, view=view, ephemeral=True)
     else:
         await ctx.send(embed=embed, view=view)
+
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
