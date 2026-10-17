@@ -3676,26 +3676,23 @@ async def brainrot_dice(ctx, amount: int = 0):
 # BLACKLIST & SERVER BLACKLIST MANAGEMENT COMMANDS
 # =========================================================
 
-@bot.hybrid_command(name="blacklist", description="Globally blacklist a user or server from using the bot")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="blacklist", description="Globally blacklist a user")
+@app_commands.default_permissions(administrator=True)
 async def blacklist(ctx, target: str, *, reason: str = "No reason provided"):
-    if ctx.author.id not in OWNER_IDS:
-        embed = discord.Embed(description="You do not have permission to use this command.", color=discord.Color.red())
-        return await ctx.send(embed=embed, ephemeral=True)
+    if not await is_owner(ctx): return
     
     if target.lower() in ("srv", "server"):
         gid = ctx.guild.id if ctx.guild else 0
         gname = ctx.guild.name if ctx.guild else "Unknown Server"
-        if not gid:
-            return await ctx.send("No valid guild found to blacklist.", ephemeral=True)
+        if not gid: return await ctx.send("No valid guild found.", ephemeral=True)
         cursor.execute("INSERT OR REPLACE INTO server_blacklist (guild_id, moderator_id, reason) VALUES (?, ?, ?)", (gid, ctx.author.id, reason))
         db.commit()
-        embed = discord.Embed(description=f"Blacklisted server name: **{gname}** and server id: `{gid}` from using the bot. Reason: {reason}", color=discord.Color.orange())
+        embed = discord.Embed(description=f"Blacklisted server **{gname}** (`{gid}`). Reason: {reason}", color=discord.Color.orange())
         return await ctx.send(embed=embed)
 
     uid_str = re.sub(r'\D', '', target)
     if not uid_str:
-        embed = discord.Embed(description="⭐️ Please provide a valid user ID, mention, or 'srv' keyword.", color=discord.Color.red())
+        embed = discord.Embed(description="⭐️ Provide a valid user ID, mention, or 'srv'.", color=discord.Color.red())
         return await ctx.send(embed=embed, ephemeral=True)
     
     uid = int(uid_str)
@@ -3705,43 +3702,37 @@ async def blacklist(ctx, target: str, *, reason: str = "No reason provided"):
 
     cursor.execute("INSERT OR REPLACE INTO blacklist (user_id, moderator_id, reason) VALUES (?, ?, ?)", (uid, ctx.author.id, reason))
     db.commit()
-    embed = discord.Embed(description=f"🚫 User ID `{uid}` has been **globally blacklisted** from using the bot. Reason: {reason}", color=discord.Color.orange())
+    embed = discord.Embed(description=f"🚫 User ID `{uid}` globally blacklisted. Reason: {reason}", color=discord.Color.orange())
     await ctx.send(embed=embed)
 
-@bot.hybrid_command(name="unblacklist", description="Remove a user ID from the global bot blacklist")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="unblacklist", description="Remove a user ID from the global blacklist")
+@app_commands.default_permissions(administrator=True)
 async def unblacklist(ctx, user_id: str):
-    if ctx.author.id not in OWNER_IDS:
-        embed = discord.Embed(description="🚿 You do not have permission to use this command.", color=discord.Color.red())
-        return await ctx.send(embed=embed, ephemeral=True)
+    if not await is_owner(ctx): return
     
-    try:
-        uid = int(re.sub(r'\D', '', user_id))
+    try: uid = int(re.sub(r'\D', '', user_id))
     except ValueError:
-        embed = discord.Embed(description="Please provide a valid numeric user ID.", color=discord.Color.red())
+        embed = discord.Embed(description="Provide a valid numeric user ID.", color=discord.Color.red())
         return await ctx.send(embed=embed)
 
     cursor.execute("SELECT 1 FROM blacklist WHERE user_id = ?", (uid,))
     if not cursor.fetchone():
-        embed = discord.Embed(description=f"User ID `{uid}` is not currently blacklisted.", color=discord.Color.red())
+        embed = discord.Embed(description=f"User ID `{uid}` is not blacklisted.", color=discord.Color.red())
         return await ctx.send(embed=embed)
 
     cursor.execute("DELETE FROM blacklist WHERE user_id = ?", (uid,))
     db.commit()
-    embed = discord.Embed(description=f"🎉 User ID `{uid}` has been successfully removed from the global blacklist.", color=discord.Color.green())
+    embed = discord.Embed(description=f"🎉 User ID `{uid}` removed from blacklist.", color=discord.Color.green())
     await ctx.send(embed=embed)
 
-@bot.hybrid_command(name="serverblacklist", description="Blacklist an entire server (Guild ID) from using the bot")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="serverblacklist", description="Blacklist a server")
+@app_commands.default_permissions(administrator=True)
 async def serverblacklist(ctx, guild_id: str, *, reason: str = "No reason provided"):
-    if ctx.author.id not in OWNER_IDS:
-        embed = discord.Embed(description="You do not have **permission** to use this command.", color=discord.Color.red())
-        return await ctx.send(embed=embed, ephemeral=True)
+    if not await is_owner(ctx): return
     
-    try:
-        gid = int(re.sub(r'\D', '', guild_id))
+    try: gid = int(re.sub(r'\D', '', guild_id))
     except ValueError:
-        embed = discord.Embed(description="Please provide a valid numeric server ID.", color=discord.Color.red())
+        embed = discord.Embed(description="Provide a valid numeric server ID.", color=discord.Color.red())
         return await ctx.send(embed=embed)
 
     target_guild = bot.get_guild(gid)
@@ -3749,30 +3740,27 @@ async def serverblacklist(ctx, guild_id: str, *, reason: str = "No reason provid
 
     cursor.execute("INSERT OR REPLACE INTO server_blacklist (guild_id, moderator_id, reason) VALUES (?, ?, ?)", (gid, ctx.author.id, reason))
     db.commit()
-    embed = discord.Embed(description=f"Blacklisted server name: **{gname}** and server id: `{gid}` from using the bot. Reason: {reason}", color=discord.Color.orange())
+    embed = discord.Embed(description=f"Blacklisted server **{gname}** (`{gid}`). Reason: {reason}", color=discord.Color.orange())
     await ctx.send(embed=embed)
 
-@bot.hybrid_command(name="serverunblacklist", description="Remove a server ID from the server blacklist")
-@app_commands.check(owner_only_predicate)
+@bot.hybrid_command(name="serverunblacklist", description="Remove a server ID from the blacklist")
+@app_commands.default_permissions(administrator=True)
 async def serverunblacklist(ctx, guild_id: str):
-    if ctx.author.id not in OWNER_IDS:
-        embed = discord.Embed(description="You do not have permission to use this command.", color=discord.Color.red())
-        return await ctx.send(embed=embed, ephemeral=True)
+    if not await is_owner(ctx): return
     
-    try:
-        gid = int(re.sub(r'\D', '', guild_id))
+    try: gid = int(re.sub(r'\D', '', guild_id))
     except ValueError:
-        embed = discord.Embed(description="Please provide a valid numeric server ID.", color=discord.Color.red())
+        embed = discord.Embed(description="Provide a valid numeric server ID.", color=discord.Color.red())
         return await ctx.send(embed=embed)
 
     cursor.execute("SELECT 1 FROM server_blacklist WHERE guild_id = ?", (gid,))
     if not cursor.fetchone():
-        embed = discord.Embed(description=f"❌ Server ID `{gid}` is not currently blacklisted.", color=discord.Color.red())
+        embed = discord.Embed(description=f"Server ID `{gid}` is not blacklisted.", color=discord.Color.red())
         return await ctx.send(embed=embed)
 
     cursor.execute("DELETE FROM server_blacklist WHERE guild_id = ?", (gid,))
     db.commit()
-    embed = discord.Embed(description=f"✅ Server ID `{gid}` has been removed from the server blacklist.", color=discord.Color.green())
+    embed = discord.Embed(description=f"✅ Server ID `{gid}` removed from blacklist.", color=discord.Color.green())
     await ctx.send(embed=embed)
 
 # =========================================================
