@@ -4730,27 +4730,21 @@ async def giveaway_reroll(ctx, message_id: int, count: int = 1):
 # =========================================================
 
 @bot.hybrid_command(name="sync", description="Force sync slash commands")
-@app_commands.check(owner_only_predicate)
+@app_commands.default_permissions(administrator=True)
 async def sync(ctx):
+    if not await is_owner(ctx): return
     try:
         await bot.tree.sync()
         embed = discord.Embed(
             description="<a:Sync:1557367041709576242> Commands have been synced globally!",
             color=discord.Color.from_rgb(87, 242, 135),
         )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+        else: await ctx.send(embed=embed)
     except Exception as e:
-        embed = discord.Embed(
-            description=f"❌ Sync failed: {e}",
-            color=discord.Color.from_rgb(237, 66, 69),
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        embed = discord.Embed(description=f"❌ Sync failed: {e}", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+        else: await ctx.send(embed=embed)
 # =========================================================
 # GOON COMMAND
 # =========================================================
