@@ -74,25 +74,23 @@ def staff_only():
     return decorator
 
 
-def can_moderate(moderator: discord.Member, target: discord.Member, guild: discord.Guild) -> str:
+def can_moderate(moderator: discord.Member, target: discord.Member, guild: discord.Guild, action: str) -> str:
     """Returns an error message if the moderator cannot punish the target, otherwise returns None."""
     if moderator.id == target.id:
-        return "You cannot use this on yourself."
+        return f"You cannot {action} yourself."
     if target.id == guild.owner_id:
-        return "You cannot use this on the server owner."
+        return f"You cannot {action} the server owner."
     if moderator.id == guild.owner_id:
         return None  # Server owner can do anything
 
-    # Carl-bot style hierarchy check
+    # Hierarchy checks
     if moderator.top_role <= target.top_role:
-        return f"You cannot moderate {target.mention} because their highest role is equal to or higher than yours."
+        return f"You cannot {action} a higher-up."
     
-    # Check if the bot itself is high enough to punish them
     if guild.me.top_role <= target.top_role:
-        return f"I cannot moderate {target.mention} because their highest role is higher than my highest role."
+        return f"I cannot {action} {target.mention} because their role is higher than mine."
 
     return None  # Allowed
-
 # =========================================================
 # BOT TOKEN
 # =========================================================
