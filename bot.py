@@ -905,14 +905,14 @@ async def on_message_edit(before, after):
 async def on_message(message):
     if message.author.bot:
         return
-    
+
     is_standalone_bot_mention = (
         bot.user in message.mentions
         and not message.mention_everyone
         and message.reference is None
         and message.content.strip() in (f"<@{bot.user.id}>", f"<@!{bot.user.id}>")
     )
-    
+
     if message.mentions:
         for member in message.mentions:
             if member.id in afk_users:
@@ -928,11 +928,11 @@ async def on_message(message):
                     color=discord.Color.from_rgb(30, 31, 34)
                 )
                 await message.channel.send(embed=embed)
-                
+
     if message.author.id in afk_users:
         data = afk_users.pop(message.author.id)
         duration_sec = int(time.time() - data["time"])
-        
+
         if duration_sec < 60:
             dur_str = f"{duration_sec} second{'s' if duration_sec != 1 else ''}"
         elif duration_sec < 3600:
@@ -960,16 +960,16 @@ async def on_message(message):
                     time_str = f"{time_ago // 60} minutes ago"
                 else:
                     time_str = f"{time_ago // 3600} hours ago"
-                
+
                 mentions_text.append(f"**{m['author_name']}**, {time_str}\n[Click to view message]({m['jump_url']})")
-            
+
             embed.add_field(
                 name=f"You received {len(data['mentions'])} mention(s)",
                 value="\n\n".join(mentions_text),
                 inline=False
             )
 
-                await message.reply(embed=embed, mention_author=False)
+        await message.reply(embed=embed, mention_author=False)
 
     await bot.process_commands(message)
 # =========================================================
