@@ -10215,6 +10215,48 @@ async def channelhide(ctx, member: discord.Member, duration: str, channel: disco
 
     bot.loop.create_task(unhide_task())
 # =========================================================
+# CHANNEL UNHIDE COMMAND
+# =========================================================
+
+@bot.hybrid_command(name="channelunhide", aliases=["cunhide", "unhidefrom"], description="Remove a member's hidden status from this channel")
+@app_commands.describe(
+    member="The member to unhide",
+    channel="The channel to unhide them from (defaults to current)"
+)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True,
+    manage_roles=True, manage_messages=True, manage_channels=True,
+    manage_guild=True, moderate_members=True, manage_nicknames=True,
+)
+async def channelunhide(ctx, member: discord.Member, channel: discord.TextChannel = None):
+    # 1. Check if the user is staff
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+    target_channel = channel or ctx.channel
+
+    # 2. Try to remove the hidden permission
+    try:
+        # Setting view_channel=None removes the specific "deny" overwrite we set earlier
+        await target_channel.set_permissions(member, view_channel=None, reason=f"Unhidden by {ctx.author}")
+    except Exception as e:
+        embed = discord.Embed(
+            description=f"<:maria_winters:1559574601359425657> Failed to unhide member: `{e}`",
+            color=discord.Color.from_rgb(237, 66, 69)
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # 3. Send success message
+    embed = discord.Embed(
+        description=f"<:rynnx:1557365310963589172> {member.mention} has been **unhidden** from {target_channel.mention}.",
+        color=discord.Color.from_rgb(87, 242, 135)
+    )
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
+# =========================================================
 # RUN BOT
 # =========================================================
 
