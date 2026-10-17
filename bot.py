@@ -28,7 +28,7 @@ OWNER_IDS = {
 }
 
 # =========================================================
-# STAFF SYSTEM — hides commands from non-staff in the slash menu
+# STAFF SYSTEM — CARL-BOT STYLE
 # =========================================================
 
 def is_staff(member: discord.Member) -> bool:
@@ -54,7 +54,6 @@ def is_staff(member: discord.Member) -> bool:
 def staff_only():
     """Hides the slash command from non-staff AND blocks non-staff from running it."""
     def decorator(func):
-        # Hide from slash menu unless user has one of these perms
         func = app_commands.default_permissions(
             administrator=True,
             manage_messages=True,
@@ -67,7 +66,6 @@ def staff_only():
             manage_nicknames=True,
         )(func)
 
-        # Also block at runtime (backup in case they bypass the menu)
         async def predicate(ctx: commands.Context) -> bool:
             return is_staff(ctx.author)
 
@@ -75,7 +73,8 @@ def staff_only():
         return func
     return decorator
 
-    def can_moderate(moderator: discord.Member, target: discord.Member, guild: discord.Guild) -> str:
+
+def can_moderate(moderator: discord.Member, target: discord.Member, guild: discord.Guild) -> str:
     """Returns an error message if the moderator cannot punish the target, otherwise returns None."""
     if moderator.id == target.id:
         return "You cannot use this on yourself."
@@ -93,14 +92,12 @@ def staff_only():
         return f"I cannot moderate {target.mention} because their highest role is higher than my highest role."
 
     return None  # Allowed
-    
+
+# =========================================================
+# BOT TOKEN
+# =========================================================
+
 TOKEN = os.getenv("DISCORD_TOKEN")
-
-if not TOKEN:
-    from dotenv import load_dotenv
-    load_dotenv()
-    TOKEN = os.getenv("DISCORD_TOKEN")
-
 if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN was not found in your environment or .env file.")
 
