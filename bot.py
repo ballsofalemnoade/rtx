@@ -61,7 +61,7 @@ intents.dm_messages = True
 bot = commands.Bot(
     command_prefix=["R!", "r!", ",,"],
     intents=intents,
-    help_command=None
+    help_command=None,
 )
 
 # =========================================================
