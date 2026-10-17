@@ -27,6 +27,54 @@ OWNER_IDS = {
     1286560808528117820
 }
 
+# =========================================================
+# STAFF SYSTEM — hides commands from non-staff in the slash menu
+# =========================================================
+
+def is_staff(member: discord.Member) -> bool:
+    """True if the member has any staff-level permission."""
+    if member is None:
+        return False
+    if member.id in OWNER_IDS:
+        return True
+    perms = member.guild_permissions
+    return (
+        perms.administrator
+        or perms.ban_members
+        or perms.kick_members
+        or perms.manage_messages
+        or perms.manage_roles
+        or perms.manage_channels
+        or perms.manage_guild
+        or perms.moderate_members
+        or perms.manage_nicknames
+    )
+
+
+def staff_only():
+    """Hides the slash command from non-staff AND blocks non-staff from running it."""
+    def decorator(func):
+        # Hide from slash menu unless user has one of these perms
+        func = app_commands.default_permissions(
+            administrator=True,
+            manage_messages=True,
+            manage_roles=True,
+            manage_channels=True,
+            manage_guild=True,
+            ban_members=True,
+            kick_members=True,
+            moderate_members=True,
+            manage_nicknames=True,
+        )(func)
+
+        # Also block at runtime (backup in case they bypass the menu)
+        async def predicate(ctx: commands.Context) -> bool:
+            return is_staff(ctx.author)
+
+        func = commands.check(predicate)(func)
+        return func
+    return decorator
+    
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 if not TOKEN:
