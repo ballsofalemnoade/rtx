@@ -2923,25 +2923,34 @@ async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"
 # =========================================================
 
 @bot.hybrid_command(name="unban", description="Unban a user by ID")
-@commands.has_permissions(ban_members=True)
+@app_commands.default_permissions(
+    administrator=True, ban_members=True, kick_members=True,
+    manage_roles=True, manage_messages=True, manage_channels=True,
+    manage_guild=True, moderate_members=True, manage_nicknames=True,
+)
 async def unban(ctx, user_id: str):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="🛡️ Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
     try:
         uid = int(user_id)
         user = await bot.fetch_user(uid)
         await ctx.guild.unban(user)
-        
+
         embed = discord.Embed(
             title="<:maria_winters:1559584981091614750> Successfully Unbanned",
             color=discord.Color.green()
         )
         embed.add_field(name="User", value=f"{user}", inline=False)
         embed.set_footer(text=f"Unbanned by {ctx.author.display_name}")
-        
+
         if ctx.interaction:
             await ctx.interaction.response.send_message(embed=embed)
         else:
             await ctx.send(embed=embed)
-            
+
     except discord.NotFound:
         if ctx.interaction:
             await ctx.interaction.response.send_message(f"<:maria_winters:1559574601359425657> User ID `{user_id}` not found.", ephemeral=True)
@@ -2952,6 +2961,7 @@ async def unban(ctx, user_id: str):
             await ctx.interaction.response.send_message(f"<:maria_winters:1559574601359425657> Could not find or unban that user. Check the user ID.", ephemeral=True)
         else:
             await ctx.send(f"<:maria_winters:1559574601359425657> Could not find or unban that user. Check the user ID.")
+
 
 @unban.error
 async def unban_error(ctx, error):
