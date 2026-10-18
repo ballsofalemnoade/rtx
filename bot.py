@@ -9749,7 +9749,7 @@ async def on_ready():
         if message_id:
             active_codes[message_id] = code_id
 
-    # Just sync globally once. Discord will handle it.
+    # ONLY DO THIS. Do not use copy_global_to.
     try:
         await bot.tree.sync()
         print("🔄 Global sync complete.")
@@ -10070,6 +10070,17 @@ async def channelunhide(ctx, member: discord.Member, channel: discord.TextChanne
     )
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
+        
+    @bot.command(name="purgecommands")
+@app_commands.check(owner_only_predicate)
+async def purgecommands(ctx):
+    if ctx.author.id not in OWNER_IDS: return
+    bot.tree.clear_commands(guild=None)
+    await bot.tree.sync()
+    for guild in bot.guilds:
+        bot.tree.clear_commands(guild=guild)
+        await bot.tree.sync(guild=guild)
+    await ctx.send("🗑️ All commands wiped. DO NOT restart the bot. Wait 10 minutes.")
 # =========================================================
 # RUN BOT
 # =========================================================
