@@ -2922,20 +2922,20 @@ async def afk(ctx, *, reason: str = "AFK"):
 )
 async def ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if not ctx.author.guild_permissions.ban_members and ctx.author.id not in OWNER_IDS:
-        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **ban members** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **ban members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
     error = can_moderate(ctx.author, member, ctx.guild, "ban")
     if error:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     await member.ban(reason=reason)
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "ban", reason)
     
-    embed = discord.Embed(description=f"<:banned:1557374684650283058> **{member.display_name}** has been banned.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+    embed = discord.Embed(description=f"<:3xge_:1561443118426104000> **{member.display_name}** has been banned.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
 # =========================================================
@@ -2997,6 +2997,7 @@ async def fake(ctx):
 # =========================================================
 # FAKE BANCOMMAND
 # =========================================================
+
 @fake.command(name="fakeban", description="Fake-ban a member without actually banning them")
 async def fake_ban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
    
@@ -3021,20 +3022,20 @@ async def fake_ban(ctx, member: discord.Member, *, reason: str = "No reason prov
 )
 async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if not ctx.author.guild_permissions.kick_members and ctx.author.id not in OWNER_IDS:
-        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **kick members** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **kick members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
     error = can_moderate(ctx.author, member, ctx.guild, "kick")
     if error:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     await member.kick(reason=reason)
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "kick", reason)
     
-    embed = discord.Embed(description=f"<:rynnx:1557365310963589172> **{member.display_name}** has been kicked.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+    embed = discord.Embed(description=f"<:3xge_:1561443118426104000> **{member.display_name}** has been kicked.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
 # =========================================================
@@ -3049,19 +3050,19 @@ async def kick(ctx, member: discord.Member, *, reason: str = "No reason provided
 )
 async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str = "No reason provided"):
     if not ctx.author.guild_permissions.moderate_members and ctx.author.id not in OWNER_IDS:
-        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **moderate members** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **moderate members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
     error = can_moderate(ctx.author, member, ctx.guild, "mute")
     if error:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
     seconds = parse_duration(duration)
     if not seconds:
-        embed = discord.Embed(description="<:maria_winters:1559574601359425657> Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> Invalid duration. Use: `10s`, `5m`, `2h`, `1d`.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3069,11 +3070,11 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
         await member.timeout(timedelta(seconds=seconds), reason=reason)
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "mute", reason)
         
-        embed = discord.Embed(description=f"<:maria_winters:1559587361027916047> **{member.display_name}** has been muted for **{duration}**.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+        embed = discord.Embed(description=f"<:3xge_:1561443118426104000> **{member.display_name}** has been muted for **{duration}**.\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
     except Exception as e:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> Failed to mute member: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> Failed to mute member: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
@@ -3088,13 +3089,13 @@ async def mute(ctx, member: discord.Member, duration: str = "1h", *, reason: str
 )
 async def unmute(ctx, member: discord.Member):
     if not ctx.author.guild_permissions.moderate_members and ctx.author.id not in OWNER_IDS:
-        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **moderate members** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **moderate members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
     error = can_moderate(ctx.author, member, ctx.guild, "unmute")
     if error:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3102,11 +3103,11 @@ async def unmute(ctx, member: discord.Member):
         await member.timeout(None, reason=f"Unmuted by {ctx.author}")
         log_mod_action(ctx.author.id, member.id, ctx.guild.id, "unmute", "Removed timeout")
         
-        embed = discord.Embed(description=f"<:rynnx:1557365310963589172> Removed **{member.mention}'s** timeout.", color=discord.Color.from_rgb(87, 242, 135))
+        embed = discord.Embed(description=f"<:3xge_:1561443118426104000> Removed **{member.mention}'s** timeout.", color=discord.Color.from_rgb(87, 242, 135))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
     except Exception as e:
-        embed = discord.Embed(description=f"❌ Failed to unmute: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> Failed to unmute: `{e}`", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
@@ -3121,13 +3122,13 @@ async def unmute(ctx, member: discord.Member):
 )
 async def warn(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if not ctx.author.guild_permissions.manage_messages and ctx.author.id not in OWNER_IDS:
-        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **manage messages** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **manage messages** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
     error = can_moderate(ctx.author, member, ctx.guild, "warn")
     if error:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -3138,7 +3139,7 @@ async def warn(ctx, member: discord.Member, *, reason: str = "No reason provided
     db.commit()
     log_mod_action(ctx.author.id, member.id, ctx.guild.id, "warn", reason)
 
-    embed = discord.Embed(description=f"<:Warned:1557375803208110130> **{member.display_name}** has been warned (**#{warn_count}**).\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
+    embed = discord.Embed(description=f"<:3xge_:1561443118426104000> **{member.display_name}** has been warned (**#{warn_count}**).\n**Reason:** {reason}", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
 # =========================================================
@@ -9267,13 +9268,13 @@ async def wouldyourather(ctx):
 )
 async def softban(ctx, member: discord.Member, *, reason: str = "No reason provided"):
     if not ctx.author.guild_permissions.ban_members and ctx.author.id not in OWNER_IDS:
-        e = discord.Embed(description="<:maria_winters:1559574601359425657> You are missing **ban members** perms.", color=discord.Color.from_rgb(237, 66, 69))
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **ban members** perms.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
     error = can_moderate(ctx.author, member, ctx.guild, "softban")
     if error:
-        embed = discord.Embed(description=f"<:maria_winters:1559574601359425657> {error}", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -9281,12 +9282,12 @@ async def softban(ctx, member: discord.Member, *, reason: str = "No reason provi
         await member.ban(reason=f"[Softban] {reason} | By {ctx.author}", delete_message_seconds=604800)
         await ctx.guild.unban(member, reason=f"[Softban] Auto-unban by {ctx.author}")
     except discord.Forbidden:
-        return await ctx.send("❌ I don't have permission to ban/unban that member.")
+        return await ctx.send("<:3xge_:1561436999599005736> I don't have permission to ban/unban that member.")
     except Exception as e:
-        return await ctx.send(f"❌ Softban failed: `{str(e)[:150]}`")
+        return await ctx.send(f"<:3xge_:1561436999599005736> Softban failed: `{str(e)[:150]}`")
 
     embed = discord.Embed(
-        title="<:Softbanned:1557375028943659109> Successfully Softbanned",
+        title="<:3xge_:1561443118426104000> Successfully Softbanned",
         description=f"{member.mention} was banned and immediately unbanned.\nTheir recent messages have been purged.",
         color=discord.Color.orange()
     )
