@@ -9749,19 +9749,10 @@ async def on_ready():
         if message_id:
             active_codes[message_id] = code_id
 
-    # --- INSTANT SYNC TO ALL SERVERS ---
-    try:
-        for guild in bot.guilds:
-            bot.tree.copy_global_to(guild=guild)
-            await bot.tree.sync(guild=guild)
-            print(f"⚡ Instantly synced commands to: {guild.name}")
-    except Exception as e:
-        print(f"⚠️ Guild sync failed: {e}")
-
-    # --- GLOBAL SYNC (Takes up to 1 hour, but needed for new servers) ---
+    # Just sync globally once. Discord will handle it.
     try:
         await bot.tree.sync()
-        print("🔄 Global sync requested.")
+        print("🔄 Global sync complete.")
     except Exception as e:
         print(f"⚠️ Global sync failed: {e}")
 
