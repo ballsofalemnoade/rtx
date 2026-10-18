@@ -1397,332 +1397,161 @@ async def on_command_error(ctx, error):
         if ctx.command and ctx.command.name in ["mute", "unmute"]:
             return
         embed = discord.Embed(
-            title="<a:maria_winters:1559574601359425657> Permission Denied",
+            title="<:3xge_:1561436999599005736> Permission Denied",
             description=f"{ctx.author.mention} You dont have moderator permissions.",
             color=discord.Color.red()
         )
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.MissingRequiredArgument):
         cmd_name = ctx.command.name if ctx.command else "unknown"
         
         embed = discord.Embed(
-            title="<a:maria_winters:1559574601359425657> Wrong Usage",
+            title="<:3xge_:1561436999599005736> Wrong Usage",
             color=discord.Color.orange()
         )
         
-        # Command-specific error messages
-        if cmd_name == "ban":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to ban."
-            
-        elif cmd_name == "unban":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a user ID to unban."
-            
-        elif cmd_name == "mute":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to mute."
-            
-        elif cmd_name == "kick":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to kick."
-            
-        elif cmd_name == "warn":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to warn."
-            
-        elif cmd_name == "role":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user and role name."
-            
-        elif cmd_name == "pay":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user and amount."
-            
-        elif cmd_name == "gamble":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an amount to gamble."
-            
-        elif cmd_name == "dice":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an amount to bet."
-            
-        elif cmd_name == "slots":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an amount to bet."
-            
-        elif cmd_name == "rob":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to rob."
-            
-        elif cmd_name == "deposit":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an amount to deposit."
-            
-        elif cmd_name == "withdraw":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an amount to withdraw."
-            
-        elif cmd_name == "marry":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to marry."
-            
-        elif cmd_name == "kiss":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to kiss."
-            
-        elif cmd_name == "slap":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to slap."
-            
-        elif cmd_name == "spank":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to spank."
-            
-        elif cmd_name == "pat":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to pat."
-            
-        elif cmd_name == "tape":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to tape."
-            
-        elif cmd_name == "hack":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to hack."
-            
-        elif cmd_name == "poll":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a question for the poll."
-            
-        elif cmd_name == "say":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a message to say."
-            
-        elif cmd_name == "embed":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide title and description."
-            
-        elif cmd_name == "clear":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide the number of messages to clear."
-            
-        elif cmd_name == "purge":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide the number of messages to purge."
-            
-        elif cmd_name == "slowmode":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide the seconds for slowmode."
-            
-        elif cmd_name == "gif":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a search term for the GIF."
-            
-        elif cmd_name == "8ball":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please ask the 8ball a question."
-            
-        elif cmd_name == "mock":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide text to mock."
-            
-        elif cmd_name == "ghostping":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to ghost ping."
-            
-        elif cmd_name == "fakenuke":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to fake nuke."
-            
-        elif cmd_name == "masscreate":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide count and channel name."
-            
-        elif cmd_name == "hide":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to hide from."
-            
-        elif cmd_name == "seek":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a channel to seek."
-            
-        elif cmd_name == "stealurl":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an emoji link or ID."
-            
-        elif cmd_name == "setup":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a style for the setup."
-            
-        elif cmd_name == "blacklist":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a user to blacklist."
-            
-        elif cmd_name == "whitelist":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to whitelist."
-            
-        elif cmd_name == "unwhitelist":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention a user to unwhitelist."
-            
-        elif cmd_name == "country":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please start the country game."
-            
-        elif cmd_name == "brainrot_dice":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide an amount to bet."
-            
-        elif cmd_name == "trollpanel":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please open the troll panel."
-            
-        elif cmd_name == "afk":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a reason for being AFK."
-            
-        elif cmd_name == "avatar":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a user to check avatar."
-            
-        elif cmd_name == "cf":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please flip a coin."
-            
-        elif cmd_name == "gayrate":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a user to check gay rate."
-            
-        elif cmd_name == "pp":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a user to check pp size."
-            
-        elif cmd_name == "iq":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide a user to check IQ."
-            
-        elif cmd_name == "roast":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please mention someone to roast."
-            
-        elif cmd_name == "snipe":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide how many messages to snipe."
-            
-        elif cmd_name == "editsnipe":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please snipe the last edited message."
-            
-        elif cmd_name == "divorce":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please divorce your spouse."
-            
-        elif cmd_name == "work":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please start working."
-            
-        elif cmd_name == "crime":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please commit a crime."
-            
-        elif cmd_name == "daily":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please claim your daily reward."
-            
-        elif cmd_name == "balance":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please check your balance."
-            
-        elif cmd_name == "luck":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please check your luck."
-            
-        elif cmd_name == "pfps":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please get a random PFP."
-            
-        elif cmd_name == "memes":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please get a random meme."
-            
-        elif cmd_name == "fraktur":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Please provide text to convert."
-            
-        else:
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} You are missing an argument!"
+        error_messages = {
+            "ban": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to ban.",
+            "unban": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a user ID to unban.",
+            "mute": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to mute.",
+            "kick": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to kick.",
+            "warn": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to warn.",
+            "role": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user and role name.",
+            "pay": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user and amount.",
+            "gamble": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an amount to gamble.",
+            "dice": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an amount to bet.",
+            "slots": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an amount to bet.",
+            "rob": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to rob.",
+            "deposit": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an amount to deposit.",
+            "withdraw": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an amount to withdraw.",
+            "marry": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to marry.",
+            "kiss": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to kiss.",
+            "slap": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to slap.",
+            "spank": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to spank.",
+            "pat": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to pat.",
+            "tape": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to tape.",
+            "hack": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to hack.",
+            "poll": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a question for the poll.",
+            "say": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a message to say.",
+            "embed": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide title and description.",
+            "clear": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide the number of messages to clear.",
+            "purge": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide the number of messages to purge.",
+            "slowmode": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide the seconds for slowmode.",
+            "gif": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a search term for the GIF.",
+            "8ball": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please ask the 8ball a question.",
+            "mock": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide text to mock.",
+            "ghostping": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to ghost ping.",
+            "fakenuke": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to fake nuke.",
+            "masscreate": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide count and channel name.",
+            "hide": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to hide from.",
+            "seek": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a channel to seek.",
+            "stealurl": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an emoji link or ID.",
+            "setup": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a style for the setup.",
+            "blacklist": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a user to blacklist.",
+            "whitelist": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to whitelist.",
+            "unwhitelist": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention a user to unwhitelist.",
+            "country": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please start the country game.",
+            "brainrot_dice": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide an amount to bet.",
+            "trollpanel": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please open the troll panel.",
+            "afk": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a reason for being AFK.",
+            "avatar": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a user to check avatar.",
+            "cf": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please flip a coin.",
+            "gayrate": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a user to check gay rate.",
+            "pp": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a user to check pp size.",
+            "iq": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide a user to check IQ.",
+            "roast": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please mention someone to roast.",
+            "snipe": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide how many messages to snipe.",
+            "editsnipe": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please snipe the last edited message.",
+            "divorce": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please divorce your spouse.",
+            "work": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please start working.",
+            "crime": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please commit a crime.",
+            "daily": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please claim your daily reward.",
+            "balance": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please check your balance.",
+            "luck": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please check your luck.",
+            "pfps": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please get a random PFP.",
+            "memes": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please get a random meme.",
+            "fraktur": f"<:3xge_:1561436999599005736> {ctx.author.mention} Please provide text to convert.",
+        }
+        
+        embed.description = error_messages.get(cmd_name, f"<:3xge_:1561436999599005736> {ctx.author.mention} You are missing an argument!")
         
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.BadArgument):
         cmd_name = ctx.command.name if ctx.command else "unknown"
-        
-        embed = discord.Embed(
-            title="<a:maria_winters:1559574601359425657> Invalid Argument",
-            color=discord.Color.red()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> Invalid Argument", color=discord.Color.red())
         
         if cmd_name in ["ban", "kick", "mute", "unmute", "warn", "rob", "marry", "kiss", "slap", "spank", "pat", "tape", "hack", "hide", "pay", "whitelist", "unwhitelist"]:
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Invalid member mentioned! Please mention a valid user."
+            embed.description = f"<:3xge_:1561436999599005736> {ctx.author.mention} Invalid member mentioned! Please mention a valid user."
         elif cmd_name == "role":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Invalid member or role! Please check the member and role name."
+            embed.description = f"<:3xge_:1561436999599005736> {ctx.author.mention} Invalid member or role! Please check the member and role name."
         elif cmd_name in ["gamble", "dice", "slots", "pay", "deposit", "withdraw"]:
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Invalid amount! Please enter a valid number."
+            embed.description = f"<:3xge_:1561436999599005736> {ctx.author.mention} Invalid amount! Please enter a valid number."
         elif cmd_name in ["gif", "mock", "say", "poll", "embed"]:
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Invalid input! Please check your arguments."
+            embed.description = f"<:3xge_:1561436999599005736> {ctx.author.mention} Invalid input! Please check your arguments."
         elif cmd_name == "seek":
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} Invalid channel! Please mention a valid text channel."
+            embed.description = f"<:3xge_:1561436999599005736> {ctx.author.mention} Invalid channel! Please mention a valid text channel."
         else:
-            embed.description = f"<a:maria_winters:1559574601359425657> {ctx.author.mention} You provided an invalid argument."
+            embed.description = f"<:3xge_:1561436999599005736> {ctx.author.mention} You provided an invalid argument."
         
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.BotMissingPermissions):
-        embed = discord.Embed(
-            title="<a:maria_winters:1559574601359425657> Bot Permission Error",
-            description=f"{ctx.author.mention} The bot is missing the required permissions.",
-            color=discord.Color.red()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> Bot Permission Error", description=f"{ctx.author.mention} I am missing the required permissions.", color=discord.Color.red())
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.MemberNotFound):
-        embed = discord.Embed(
-            title="<a:maria_winters:1559574601359425657> Member Not Found",
-            description=f"{ctx.author.mention} I couldn't find that member.",
-            color=discord.Color.red()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> Member Not Found", description=f"{ctx.author.mention} I couldn't find that member.", color=discord.Color.red())
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.CommandOnCooldown):
-        embed = discord.Embed(
-            title="<a:maria_winters:1560033684835536967> Cooldown",
-            description=f"{ctx.author.mention} Please wait `{error.retry_after:.1f}` seconds.",
-            color=discord.Color.orange()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> Cooldown", description=f"{ctx.author.mention} Please wait `{error.retry_after:.1f}` seconds.", color=discord.Color.orange())
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.RoleNotFound):
-        embed = discord.Embed(
-            title="<a:maria_winters:1559574601359425657> Role Not Found",
-            description=f"{ctx.author.mention} I couldn't find that role.",
-            color=discord.Color.red()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> Role Not Found", description=f"{ctx.author.mention} I couldn't find that role.", color=discord.Color.red())
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.NotOwner):
-        embed = discord.Embed(
-            title="<a:maria_winters:1559582938562306158> Owner Only",
-            description=f"{ctx.author.mention} Only the bot owner can use this command.",
-            color=discord.Color.red()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> Owner Only", description=f"{ctx.author.mention} Only the bot owner can use this command.", color=discord.Color.red())
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
     if isinstance(error, commands.NSFWChannelRequired):
-        embed = discord.Embed(
-            title="<a:maria_winters:1560034196733567067> NSFW Only",
-            description=f"{ctx.author.mention} This command can only be used in NSFW channels.",
-            color=discord.Color.red()
-        )
+        embed = discord.Embed(title="<:3xge_:1561436999599005736> NSFW Only", description=f"{ctx.author.mention} This command can only be used in NSFW channels.", color=discord.Color.red())
         if ctx.interaction:
-            try:
-                return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-            except Exception:
-                return
+            try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+            except: return
         return await ctx.send(embed=embed)
 
-    embed = discord.Embed(
-        title="❌ Error",
-        description=f"{ctx.author.mention} Something went wrong.",
-        color=discord.Color.red()
-    )
+    embed = discord.Embed(title="<:3xge_:1561436999599005736> Error", description=f"{ctx.author.mention} Something went wrong.", color=discord.Color.red())
     if ctx.interaction:
-        try:
-            return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-        except Exception:
-            return
+        try: return await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+        except: return
     return await ctx.send(embed=embed)
 # =========================================================
 # LUCK COMMAND
