@@ -2223,9 +2223,8 @@ async def withdraw(ctx, amount: str):
     db.commit()
     embed = discord.Embed(description=f"🏦 Successfully withdrew **${val:,}** from your bank.", color=discord.Color.green())
     await ctx.send(embed=embed)
-
 # =========================================================
-# DAILY
+# DAILY COMMAND EM
 # =========================================================
 
 @bot.hybrid_command(name="daily", description="Claim your daily reward")
@@ -2240,7 +2239,7 @@ async def daily(ctx):
         remaining = int(cooldown - (current_time - row[0]))
         hours = remaining // 3600
         minutes = (remaining % 3600) // 60
-        embed = discord.Embed(description=f"⏳ Already claimed daily reward. Try again in **{hours}h {minutes}m**.", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> Already claimed daily reward. Try again in **{hours}h {minutes}m**.", color=discord.Color.from_rgb(237, 66, 69))
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
@@ -2249,7 +2248,7 @@ async def daily(ctx):
     cursor.execute("UPDATE users SET daily_claim = ? WHERE user_id = ?", (current_time, user_id))
     db.commit()
 
-    embed = discord.Embed(description=f"<:DailyClaim:1557375724531490836> Successfully claimed daily reward of **${reward:,}**!", color=discord.Color.from_rgb(87, 242, 135))
+    embed = discord.Embed(description=f"<:3xge_:1561357016264605787> Successfully claimed daily reward of **${reward:,}**!", color=discord.Color.from_rgb(87, 242, 135))
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
 # =========================================================
@@ -2739,6 +2738,7 @@ async def afk(ctx, *, reason: str = "AFK"):
         await ctx.interaction.response.send_message(embed=embed)
     else:
         await ctx.reply(embed=embed, mention_author=False)
+    
 # =========================================================
 # BAN COMMAND
 # =========================================================
@@ -3256,56 +3256,49 @@ async def custom_embed(ctx, *, content: str):
                 pass
         await ctx.send(embed=embed)
 
-async def _run_purge(ctx, amount: int):
-    if not isinstance(ctx.author, discord.Member) or not _is_server_mod(ctx.author):
-        embed = discord.Embed(
-            title="☠️ Permission Denied",
-            description="Only **server administrators or moderators** can use this command.",
-            color=discord.Color.red()
-        )
-        return await ctx.send(embed=embed, ephemeral=True)
+async def _run_purge(ctx, amount: int, tick: str = "<:3xge_:1561441316385333249>"):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
 
     if amount < 1 or amount > 100:
-        embed = discord.Embed(
-            title="Invalid Amount",
-            description="Choose an amount between **1 and 100** messages.",
-            color=discord.Color.red()
-        )
-        return await ctx.send(embed=embed, ephemeral=True)
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> Choose an amount between **1 and 100**.", color=discord.Color.from_rgb(237, 66, 69))
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
 
     extra = 1 if ctx.message is not None and ctx.interaction is None else 0
     deleted = await ctx.channel.purge(limit=amount + extra)
     removed = len(deleted) - extra
 
-    embed = discord.Embed(
-        title="Messages Purged",
-        description=f"✨ Successfully deleted **{removed}** message(s) from this channel.",
-        color=discord.Color.green()
-    )
-    embed.set_footer(text=f"Purged by {ctx.author.display_name}")
-    await ctx.send(embed=embed, delete_after=5)
+    embed = discord.Embed(description=f"{tick} Deleted **{removed}** message(s).", color=discord.Color.from_rgb(87, 242, 135))
+    msg = await ctx.send(embed=embed)
+    await asyncio.sleep(4)
+    try: await msg.delete()
+    except Exception: pass
+
 
 @bot.hybrid_command(name="clear", description="Clear a number of messages")
 async def clear(ctx, amount: int):
     await _run_purge(ctx, amount)
 
+
 @bot.hybrid_command(name="purge", description="Mass delete messages (Admin/Moderator only)")
 async def purge(ctx, amount: int):
-    await _run_purge(ctx, amount)
+    await _run_purge(ctx, amount, "<:3xge_:1561441316385333249>")
 
 @bot.hybrid_command(name="slowmode", description="Set channel slowmode")
 @commands.has_permissions(manage_channels=True)
 async def slowmode(ctx, seconds: int):
     if seconds < 0:
-        embed = discord.Embed(description="Seconds cannot be negative.", color=discord.Color.red())
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> Seconds cannot be negative.", color=discord.Color.red())
         return await ctx.send(embed=embed)
     await ctx.channel.edit(slowmode_delay=seconds)
     if seconds == 0:
-        embed = discord.Embed(description="Slowmode has been disabled.", color=discord.Color.green())
+        embed = discord.Embed(description="<:3xge_:1561357016264605787> Slowmode has been disabled.", color=discord.Color.green())
     else:
-        embed = discord.Embed(description=f"Slowmode has been set to **{seconds} seconds**.", color=discord.Color.green())
+        embed = discord.Embed(description=f"<:3xge_:1561357016264605787> Slowmode has been set to **{seconds} seconds**.", color=discord.Color.green())
     await ctx.send(embed=embed)
-
 # =========================================================
 # BRAINROT DICE COMMAND & UI
 # =========================================================
