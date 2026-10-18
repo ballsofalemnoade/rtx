@@ -4341,27 +4341,27 @@ async def giveaway_create(
     channel: discord.TextChannel = None
 ):
     if ctx.guild is None:
-        return await ctx.send(embed=discord.Embed(description="This command must be used in a server.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> This command must be used in a server.", color=discord.Color.red()))
     if not ctx.author.guild_permissions.manage_guild and ctx.author.id not in OWNER_IDS:
-        return await ctx.send(embed=discord.Embed(description="You need Manage Server permission to create giveaways.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> You need Manage Server permission to create giveaways.", color=discord.Color.red()))
 
     seconds = parse_duration(duration)
     if seconds is None or seconds <= 0:
-        return await ctx.send(embed=discord.Embed(description="Invalid duration. Use formats like `30s`, `10m`, `2h`, `1d`.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> Invalid duration. Use formats like `30s`, `10m`, `2h`, `1d`.", color=discord.Color.red()))
     if winners < 1:
-        return await ctx.send(embed=discord.Embed(description="Winners must be at least 1.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> Winners must be at least 1.", color=discord.Color.red()))
     if winners > 25:
-        return await ctx.send(embed=discord.Embed(description="Winners too high (max 25).", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> Winners too high (max 25).", color=discord.Color.red()))
 
     target_channel = channel or ctx.channel
     if target_channel.guild.id != ctx.guild.id:
-        return await ctx.send(embed=discord.Embed(description="Channel must be in this server.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> Channel must be in this server.", color=discord.Color.red()))
 
     end_ts = int(time.time() + seconds)
     end_ts_discord = f"<t:{end_ts}:R>"
 
     embed = discord.Embed(
-        title=f"🎉 Giveaway: {prize}",
+        title=f"<:3xge_:1561441316385333249> Giveaway: {prize}",
         description=(
             f"Hosted by: {ctx.author.mention}\n"
             f"Ends: {end_ts_discord}\n"
@@ -4376,7 +4376,7 @@ async def giveaway_create(
         view = GiveawayEntryView()
         giveaway_msg = await target_channel.send(embed=embed, view=view)
     except Exception as e:
-        return await ctx.send(embed=discord.Embed(description=f"Failed to post giveaway: {e}", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description=f"<:3xge_:1561436999599005736> Failed to post giveaway: {e}", color=discord.Color.red()))
 
     cursor.execute(
         "INSERT INTO giveaways (message_id, channel_id, guild_id, prize, host_id, end_time, winners, entrants, winners_list) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -4390,13 +4390,14 @@ async def giveaway_create(
     except Exception:
         pass
 
-    confirm = discord.Embed(description=f"🎉 Giveaway created in {target_channel.mention} and will end {end_ts_discord}.", color=discord.Color.green())
+    confirm = discord.Embed(description=f"<:3xge_:1561441316385333249> Giveaway created in {target_channel.mention} and will end {end_ts_discord}.", color=discord.Color.green())
     if ctx.interaction:
         await ctx.interaction.response.send_message(embed=confirm, ephemeral=True)
     else:
         await ctx.send(embed=confirm, delete_after=10)
 
     bot.loop.create_task(_handle_giveaway_end(giveaway_msg.id, target_channel.id, ctx.guild.id, prize, winners, end_ts, ctx.author.id))
+
 
 async def _handle_giveaway_end(message_id: int, channel_id: int, guild_id: int, prize: str, winners_count: int, end_time_unix: int, host_id: int):
     wait_for = max(0, end_time_unix - int(time.time()))
@@ -4417,19 +4418,15 @@ async def _handle_giveaway_end(message_id: int, channel_id: int, guild_id: int, 
     entrants: List[int] = []
     previous_winners: List[int] = []
     if row:
-        try:
-            entrants = json.loads(row[0] or "[]")
-        except Exception:
-            entrants = []
-        try:
-            previous_winners = json.loads(row[1] or "[]")
-        except Exception:
-            previous_winners = []
+        try: entrants = json.loads(row[0] or "[]")
+        except: entrants = []
+        try: previous_winners = json.loads(row[1] or "[]")
+        except: previous_winners = []
 
     winner_mentions = "None"
     winners = []
     if not entrants:
-        result_embed = discord.Embed(title="🎉 Giveaway Ended", description=f"No valid entrants for **{prize}**. No winners were chosen.", color=discord.Color.orange())
+        result_embed = discord.Embed(title="<:3xge_:1561441316385333249> Giveaway Ended", description=f"No valid entrants for **{prize}**. No winners were chosen.", color=discord.Color.orange())
         await channel.send(embed=result_embed)
     else:
         pick_count = min(winners_count, len(entrants))
@@ -4440,8 +4437,8 @@ async def _handle_giveaway_end(message_id: int, channel_id: int, guild_id: int, 
         db.commit()
 
         result_embed = discord.Embed(
-            title="🎉 Giveaway Ended — Congratulations!",
-            description=f"{winner_mentions} 🎁 won the giveaway of **{prize}**!",
+            title=f"<:3xge_:1561441316385333249> Giveaway Ended — Congratulations!",
+            description=f"{winner_mentions} won the giveaway of **{prize}**!",
             color=discord.Color.green()
         )
         result_embed.add_field(name="Host", value=f"<@{host_id}>", inline=True)
@@ -4450,7 +4447,7 @@ async def _handle_giveaway_end(message_id: int, channel_id: int, guild_id: int, 
         for uid in winners:
             try:
                 user = await bot.fetch_user(uid)
-                dm_text = f"🎉 Congrats {user.mention} u won the giveaway **{prize}** in **{channel.guild.name}** pls check the server or ping the host <@{host_id}> in the server to claim ur giveaway!"
+                dm_text = f"Congrats {user.mention} u won the giveaway **{prize}** in **{channel.guild.name}** pls check the server or ping the host <@{host_id}> in the server to claim ur giveaway!"
                 await user.send(dm_text)
             except Exception:
                 pass
@@ -4460,7 +4457,7 @@ async def _handle_giveaway_end(message_id: int, channel_id: int, guild_id: int, 
     try:
         if message.embeds:
             ended_embed = message.embeds[0]
-            ended_embed.title = f"🎉 Giveaway (ENDED): {prize}"
+            ended_embed.title = f"<:3xge_:1561441316385333249> Giveaway (ENDED): {prize}"
             ended_embed.color = discord.Color.dark_gray()
             ended_embed.set_footer(text="This giveaway has ended.")
             ended_embed.description = (ended_embed.description or "") + f"\n\nWinners: {winner_mentions}"
@@ -4468,32 +4465,28 @@ async def _handle_giveaway_end(message_id: int, channel_id: int, guild_id: int, 
     except Exception:
         pass
 
+
 @giveaway_group.command(name="reroll", description="Reroll winners for a giveaway by message ID (host only)")
 async def giveaway_reroll(ctx, message_id: int, count: int = 1):
     cursor.execute("SELECT channel_id, prize, host_id, entrants, winners_list FROM giveaways WHERE message_id = ?", (message_id,))
     row = cursor.fetchone()
     if not row:
-        return await ctx.send(embed=discord.Embed(description="Could not find a giveaway with that message ID.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> Could not find a giveaway with that message ID.", color=discord.Color.red()))
 
     channel_id, prize, host_id, entrants_json, winners_json = row
     if ctx.author.id != host_id and ctx.author.id not in OWNER_IDS:
-        return await ctx.send(embed=discord.Embed(description="Only the giveaway host or bot owners can reroll this giveaway.", color=discord.Color.red()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> Only the giveaway host or bot owners can reroll this giveaway.", color=discord.Color.red()))
 
-    try:
-        entrants = json.loads(entrants_json or "[]")
-    except Exception:
-        entrants = []
-    try:
-        previous_winners = json.loads(winners_json or "[]")
-    except Exception:
-        previous_winners = []
+    try: entrants = json.loads(entrants_json or "[]")
+    except: entrants = []
+    try: previous_winners = json.loads(winners_json or "[]")
+    except: previous_winners = []
 
     if not entrants:
-        return await ctx.send(embed=discord.Embed(description="No entrants to pick from.", color=discord.Color.orange()))
+        return await ctx.send(embed=discord.Embed(description="<:3xge_:1561436999599005736> No entrants to pick from.", color=discord.Color.orange()))
 
     pool = [u for u in entrants if u not in previous_winners]
-    if not pool:
-        pool = entrants.copy()
+    if not pool: pool = entrants.copy()
 
     pick_count = max(1, min(count, len(pool)))
     new_winners = random.sample(pool, k=pick_count)
@@ -4505,12 +4498,9 @@ async def giveaway_reroll(ctx, message_id: int, count: int = 1):
     try:
         channel = bot.get_channel(channel_id) or await bot.fetch_channel(channel_id)
         mentions = ", ".join(f"<@{w}>" for w in new_winners)
-        if len(new_winners) == 1:
-            title = "🎉 Reroll — New Winner!"
-            desc = f"Congrats — new winner of **{prize}** is {mentions}!"
-        else:
-            title = "🎉 Reroll — New Winners!"
-            desc = f"Congrats — new winners of **{prize}** are {mentions}!"
+        
+        title = f"<:3xge_:1561441316385333249> Reroll — New Winner(s)!"
+        desc = f"Congrats — new winners of **{prize}** are {mentions}!"
 
         reroll_embed = discord.Embed(title=title, description=desc, color=discord.Color.green())
         reroll_embed.add_field(name="Host", value=f"<@{host_id}>", inline=True)
@@ -4532,12 +4522,11 @@ async def giveaway_reroll(ctx, message_id: int, count: int = 1):
                 ed = original_msg.embeds[0]
                 ed.description = (ed.description or "") + f"\n\nReroll winners: {mentions}"
                 await original_msg.edit(embed=ed)
-        except Exception:
-            pass
+        except: pass
 
-        await ctx.send(embed=discord.Embed(description=f"Rerolled — new winner(s): {mentions}", color=discord.Color.green()))
+        await ctx.send(embed=discord.Embed(description=f"<:3xge_:1561441316385333249> Rerolled — new winner(s): {mentions}", color=discord.Color.green()))
     except Exception as e:
-        await ctx.send(embed=discord.Embed(description=f"Failed to announce reroll: {e}", color=discord.Color.red()))
+        await ctx.send(embed=discord.Embed(description=f"<:3xge_:1561436999599005736> Failed to announce reroll: {e}", color=discord.Color.red()))
 # =========================================================
 # SYNC COMMAND
 # =========================================================
