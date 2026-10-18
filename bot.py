@@ -10070,8 +10070,11 @@ async def channelunhide(ctx, member: discord.Member, channel: discord.TextChanne
     )
     if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
     else: await ctx.send(embed=embed)
-        
-    @bot.command(name="purgecommands")
+# =========================================================
+# PURGEFWFQFFAF COMMAND
+# ========================================================= 
+
+@bot.command(name="purgecommands")
 @app_commands.check(owner_only_predicate)
 async def purgecommands(ctx):
     if ctx.author.id not in OWNER_IDS: return
