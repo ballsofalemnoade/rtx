@@ -9023,8 +9023,9 @@ async def chat(ctx, *, message: str):
     hist[:] = hist[-20:]
 
     try:
+        # FIXED: Using the current, supported Groq model
         res = await groq_client.chat.completions.create(
-            model="llama3-8b-8192", # Using a much faster, more reliable model
+            model="llama-3.3-70b-versatile", 
             messages=[
                 {
                     "role": "system", 
@@ -9037,13 +9038,14 @@ async def chat(ctx, *, message: str):
         
         reply = res.choices[0].message.content
         
-        # If the AI returns nothing, force a fallback message
+        # Fallback if the AI returns an empty string (fixes the "**" bug)
         if not reply or not reply.strip():
             reply = "bro what 💀"
         else:
             reply = reply.strip().lower().rstrip(".!?")
         
     except Exception as e:
+        # Print the exact error to Railway logs for debugging
         print(f"GROQ ERROR: {e}")
         err = f"<:3xge_:1561436999599005736> Groq error: `{str(e)[:150]}`"
         if ctx.interaction: return await ctx.interaction.followup.send(err)
@@ -9054,7 +9056,6 @@ async def chat(ctx, *, message: str):
 
     gif_url = random.choice(REACTION_GIFS)
 
-    # Removed the ** so it doesn't show ** if empty
     embed = discord.Embed(
         description=reply, 
         color=discord.Color.from_rgb(30, 31, 34)
