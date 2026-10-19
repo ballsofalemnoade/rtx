@@ -6421,55 +6421,34 @@ BENDOVER_GIFS = [
     "https://cdn.discordapp.com/attachments/1525052130266841090/1541231362344747078/ilyshkin.gif?ex=6a8cd70f&is=6a8b858f&hm=1e2cd60e7f265ba8c766fc48a3135f51f7677d2a353af44e5a744a974421d987",
 ]
 
-@bot.hybrid_command(name="bendover", description="Ask someone to bend over!")
+@bot.hybrid_command(name="bendover", description="Ask someone to bend over!", nsfw=True)
 async def bendover(ctx, member: discord.Member = None):
-    if not await check_nsfw(ctx):
-        return
+    if not await check_nsfw(ctx): return
     if member is None:
-        embed = discord.Embed(
-            description="❌ You need to specify someone to bend over🤤!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> You need to specify someone to bend over!", color=discord.Color.red())
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx.send(embed=embed)
         return
     
     if member.id == ctx.author.id:
-        embed = discord.Embed(
-            description=f"🫣 {ctx.author.mention} asked themselves to bend over... that's odd uhm!",
-            color=discord.Color.orange()
-        )
+        embed = discord.Embed(description=f" {ctx.author.mention} **bends them selfs over thats weird...**", color=discord.Color.orange())
         embed.set_image(url=random.choice(BENDOVER_GIFS))
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+        else: await ctx.send(embed=embed)
         return
     
     if member.bot:
-        embed = discord.Embed(
-            description="❌ You can't ask a bot to bend over!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> You can't ask a bot to bend over!", color=discord.Color.red())
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx.send(embed=embed)
         return
     
-    embed = discord.Embed(
-        description=f"🫣 {ctx.author.mention} asked {member.mention} to bend over and they said alr 😳",
-        color=discord.Color.from_rgb(255, 182, 193)
-    )
+    embed = discord.Embed(description=f"{ctx.author.mention} **Bends over** {member.mention}", color=discord.Color.from_rgb(255, 182, 193))
     embed.set_image(url=random.choice(BENDOVER_GIFS))
     embed.set_footer(text="Bend over!")
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
-    else:
-        await ctx.send(embed=embed)
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
 # =========================================================
 # HIDE & SEEK COMMAND - WITH INVITE SYSTEM
 # =========================================================
