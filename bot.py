@@ -280,6 +280,25 @@ CREATE TABLE IF NOT EXISTS tickets (
 db.commit()
 
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS jail_config (
+    guild_id INTEGER PRIMARY KEY,
+    channel_id INTEGER,
+    role_id INTEGER
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS jailed_users (
+    guild_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    roles TEXT,
+    release_time REAL,
+    PRIMARY KEY (guild_id, user_id)
+)
+""")
+db.commit()
+
 # =========================================================
 # TICKET SYSTEM
 # =========================================================
@@ -9852,6 +9871,245 @@ async def purgecommands(ctx):
         bot.tree.clear_commands(guild=guild)
         await bot.tree.sync(guild=guild)
     await ctx.send("🗑️ All commands wiped. DO NOT restart the bot. Wait 10 minutes.")
+# =========================================================
+# JAIL SYSTEM
+# =========================================================
+
+@bot.hybrid_group(name="jail", description="Jail system commands", invoke_without_command=True)
+async def jail_group(ctx):
+    if ctx.invoked_subcommand is None:
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Usage: `/jail @member <duration> <reason>` or `/jail config`", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+
+@jail_group.command(name="config", description="Setup the RyzeX-Jail channel and role (Server Owner only)")
+async def jail_config(ctx):
+    # Strict Owner Check
+    if ctx.author.id != ctx.guild.owner_id and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Only the **Server Owner** can set up the jail.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+    if ctx.interaction: await ctx.interaction.response.defer(ephemeral=True)
+
+    guild = ctx.guild
+    
+    # 1. Create or get Jailed role
+    jail_role = discord.utils.get(guild.roles, name="Jailed")
+    if not jail_role:
+        try:
+            jail_role = await guild.create_role(name="Jailed", color=discord.Color.dark_gray(), reason="Jail System Setup")
+        except Exception as e:
+            return await ctx.interaction.followup.send(f"<:3xge_:1561436999599005736> Failed to create role: {e}", ephemeral=True)
+
+    # 2. Hide Jailed role from all channels
+    for channel in guild.channels:
+        if isinstance(channel, (discord.TextChannel, discord.VoiceChannel)):
+            try:
+                await channel.set_permissions(jail_role, view_channel=False)
+                await asyncio.sleep(0.1)
+            except: pass
+
+    # 3. Create or get RyzeX-Jail channel
+    jail_channel = discord.utils.get(guild.text_channels, name="ryzex-jail")
+    if not jail_channel:
+        try:
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(view_channel=False),
+                jail_role: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
+                guild.me: discord.PermissionOverwrite(view_channel=True, manage_channels=True)
+            }
+            # Creates channel with 1 hour slowmode (3600 seconds)
+            jail_channel = await guild.create_text_channel(
+                name="RyzeX-Jail", 
+                overwrites=overwrites, 
+                slowmode_delay=3600,
+                topic="Jailed members can only talk here. 1-hour slowmode."
+            )
+        except Exception as e:
+            return await ctx.interaction.followup.send(f"<:3xge_:1561436999599005736> Failed to create channel: {e}", ephemeral=True)
+    else:
+        # If it exists, ensure slowmode is 1 hour
+        await jail_channel.edit(slowmode_delay=3600)
+
+    # 4. Save to DB
+    cursor.execute("INSERT OR REPLACE INTO jail_config (guild_id, channel_id, role_id) VALUES (?, ?, ?)", (guild.id, jail_channel.id, jail_role.id))
+    db.commit()
+
+    embed = discord.Embed(
+        title="<:3xge_:1561357016264605787> Jail System Configured",
+        description=f"**Channel:** {jail_channel.mention}\n**Role:** {jail_role.mention}\n**Slowmode:** 1 hour\n\nStaff can now use `/jail @member <duration> <reason>`.",
+        color=discord.Color.green()
+    )
+    await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+
+
+# This event ensures that if a NEW channel is created later, the Jailed role can't see it.
+@bot.event
+async def on_guild_channel_create(channel):
+    if not isinstance(channel, (discord.TextChannel, discord.VoiceChannel)):
+        return
+    cursor.execute("SELECT role_id FROM jail_config WHERE guild_id = ?", (channel.guild.id,))
+    row = cursor.fetchone()
+    if row and row[0]:
+        jail_role = channel.guild.get_role(row[0])
+        if jail_role:
+            try: await channel.set_permissions(jail_role, view_channel=False)
+            except: pass
+
+
+@jail_group.command(name="add", description="Jail a member")
+@app_commands.describe(member="The member to jail", duration="e.g. 1h, 1d, 7d", reason="Why they are being jailed")
+@app_commands.default_permissions(moderate_members=True)
+async def jail_add(ctx, member: discord.Member, duration: str, *, reason: str = "No reason provided"):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+    error = can_moderate(ctx.author, member, ctx.guild, "jail")
+    if error:
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # Parse Duration
+    seconds = parse_duration(duration)
+    if not seconds:
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> Invalid duration. Use `10m`, `1h`, `1d`.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    # Check Config
+    cursor.execute("SELECT channel_id, role_id FROM jail_config WHERE guild_id = ?", (ctx.guild.id,))
+    cfg = cursor.fetchone()
+    if not cfg:
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> Jail system not setup. Run `/jail config` first.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    jail_channel = ctx.guild.get_channel(cfg[0])
+    jail_role = ctx.guild.get_role(cfg[1])
+    
+    if jail_role in member.roles:
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {member.mention} is already jailed.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+
+    if ctx.interaction: await ctx.interaction.response.defer(ephemeral=True)
+
+    # Save current roles
+    saved_roles = [str(r.id) for r in member.roles if r != ctx.guild.default_role and not r.managed]
+    release_time = time.time() + seconds
+
+    cursor.execute(
+        "INSERT OR REPLACE INTO jailed_users (guild_id, user_id, roles, release_time) VALUES (?, ?, ?, ?)",
+        (ctx.guild.id, member.id, json.dumps(saved_roles), release_time)
+    )
+    db.commit()
+
+    # Apply Jail
+    try:
+        await member.edit(roles=[jail_role], reason=f"Jailed by {ctx.author}: {reason}")
+        
+        # Disconnect from VC
+        if member.voice and member.voice.channel:
+            await member.move_to(None, reason="Jailed")
+
+        embed = discord.Embed(
+            description=f"<:3xge_:1561443118426104000> {member.mention} has been sent to {jail_channel.mention} for **{duration}**.\n**Reason:** {reason}",
+            color=discord.Color.green()
+        )
+        await ctx.interaction.followup.send(embed=embed)
+
+        # Send to jail channel
+        jail_embed = discord.Embed(
+            title="🔒 You have been jailed",
+            description=f"**Reason:** {reason}\n**Duration:** {duration}\n\nYou will be released <t:{int(release_time)}:R>.",
+            color=discord.Color.red()
+        )
+        await jail_channel.send(content=member.mention, embed=jail_embed)
+
+        # Start Timer for Auto-Release
+        async def auto_release():
+            await asyncio.sleep(seconds)
+            await release_user(ctx.guild, member, f"Auto-released after {duration}")
+
+        bot.loop.create_task(auto_release())
+
+    except Exception as e:
+        await ctx.interaction.followup.send(f"<:3xge_:1561436999599005736> Failed to jail: {e}", ephemeral=True)
+
+
+@jail_group.command(name="remove", description="Release a member from jail")
+@app_commands.describe(member="The member to unjail")
+@app_commands.default_permissions(moderate_members=True)
+async def jail_remove(ctx, member: discord.Member):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+    if ctx.interaction: await ctx.interaction.response.defer(ephemeral=True)
+
+    success = await release_user(ctx.guild, member, f"Manually released by {ctx.author}")
+    if success:
+        embed = discord.Embed(description=f"<:3xge_:1561443118426104000> {member.mention} has been released from jail.", color=discord.Color.green())
+    else:
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {member.mention} is not in the jail database.", color=discord.Color.red())
+
+    await ctx.interaction.followup.send(embed=embed)
+
+# Helper function to restore roles
+async def release_user(guild, member, reason):
+    cursor.execute("SELECT roles FROM jailed_users WHERE guild_id = ? AND user_id = ?", (guild.id, member.id))
+    row = cursor.fetchone()
+    
+    if not row:
+        return False
+        
+    roles_to_add = []
+    try:
+        saved_ids = json.loads(row[0])
+        for r_id in saved_ids:
+            role = guild.get_role(int(r_id))
+            if role and not role.managed: roles_to_add.append(role)
+    except: pass
+
+    try:
+        await member.edit(roles=roles_to_add, reason=reason)
+        cursor.execute("DELETE FROM jailed_users WHERE guild_id = ? AND user_id = ?", (guild.id, member.id))
+        db.commit()
+        return True
+    except:
+        return False
+
+# Restore jail timers if bot restarts
+@bot.event
+async def on_ready_jail_restore():
+    # Wait for bot to fully cache
+    await asyncio.sleep(5)
+    current_time = time.time()
+    cursor.execute("SELECT guild_id, user_id, release_time FROM jailed_users")
+    rows = cursor.fetchall()
+    
+    for guild_id, user_id, release_time in rows:
+        guild = bot.get_guild(guild_id)
+        if not guild: continue
+        member = guild.get_member(user_id)
+        
+        if release_time <= current_time:
+            # Time already passed, release immediately
+            if member: await release_user(guild, member, "Auto-released (Bot restarted)")
+        else:
+            # Set new timer for remaining time
+            remaining = release_time - current_time
+            async def auto_release(g, m, r):
+                await asyncio.sleep(r)
+                await release_user(g, m, "Auto-released (Timer completed)")
+            if member:
+                bot.loop.create_task(auto_release(guild, member, remaining))
 # =========================================================
 # RUN BOT
 # =========================================================
