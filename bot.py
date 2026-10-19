@@ -7296,55 +7296,57 @@ async def on_command_error(ctx, error):
             return
     return await ctx.send(embed=embed)
 # =========================================================
-# CHANNEL LOCK / UNLOCK COMMANDS
+# LOCK / UNLOCK COMMANDS
 # =========================================================
 
-@bot.hybrid_command(name="lock", description="Locks the current channel to prevent members from sending messages.")
-@app_commands.describe(channel="The channel to lock (defaults to current channel)")
-async def lock(ctx: commands.Context, channel: discord.TextChannel = None):
-    # Check permissions
-    if not await require_server_mod(ctx):
-        return
-
+@bot.hybrid_command(name="lock", description="Locks the current channel")
+@app_commands.default_permissions(manage_channels=True)
+async def lock(ctx, channel: discord.TextChannel = None):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+        
     channel = channel or ctx.channel
     overwrite = channel.overwrites_for(ctx.guild.default_role)
-
+    
     if overwrite.send_messages is False:
-        return await ctx.send(f"🔒 {channel.mention} is already locked.")
-
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {channel.mention} is already locked.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+        
     overwrite.send_messages = False
-    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, reason=f"Channel locked by {ctx.author}")
-
-    embed = discord.Embed(
-        title="🔒 Channel Locked",
-        description=f"{channel.mention} has been locked by {ctx.author.mention}.",
-        color=discord.Color.red()
-    )
-    await ctx.send(embed=embed)
+    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, reason=f"Locked by {ctx.author}")
+    
+    # Updated Emoji: 1561842533552623797
+    embed = discord.Embed(description=f"<:3xge_:1561842533552623797> {channel.mention} has been locked.", color=discord.Color.green())
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
 
 
-@bot.hybrid_command(name="unlock", description="Unlocks the current channel to allow members to send messages.")
-@app_commands.describe(channel="The channel to unlock (defaults to current channel)")
-async def unlock(ctx: commands.Context, channel: discord.TextChannel = None):
-    # Check permissions
-    if not await require_server_mod(ctx):
-        return
-
+@bot.hybrid_command(name="unlock", description="Unlocks the current channel")
+@app_commands.default_permissions(manage_channels=True)
+async def unlock(ctx, channel: discord.TextChannel = None):
+    if not is_staff(ctx.author):
+        e = discord.Embed(description="<:3xge_:1561436999599005736> Staff only.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+        
     channel = channel or ctx.channel
     overwrite = channel.overwrites_for(ctx.guild.default_role)
-
+    
     if overwrite.send_messages is True or overwrite.send_messages is None:
-        return await ctx.send(f"🔓 {channel.mention} is already unlocked.")
-
-    overwrite.send_messages = None  # Resets to default role settings
-    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, reason=f"Channel unlocked by {ctx.author}")
-
-    embed = discord.Embed(
-        title="🔓 Channel Unlocked",
-        description=f"{channel.mention} has been unlocked by {ctx.author.mention}.",
-        color=discord.Color.green()
-    )
-    await ctx.send(embed=embed)
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {channel.mention} is already unlocked.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+        
+    overwrite.send_messages = None
+    await channel.set_permissions(ctx.guild.default_role, overwrite=overwrite, reason=f"Unlocked by {ctx.author}")
+    
+    # Updated Emoji: 1561841887625748521
+    embed = discord.Embed(description=f"<:3xge_:1561841887625748521> {channel.mention} has been unlocked.", color=discord.Color.green())
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
 # =========================================================
 # LEADERBOARD COMMAND (top 1-100)
 # =========================================================
