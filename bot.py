@@ -15,6 +15,7 @@ from typing import List
 import discord
 from discord import app_commands
 from discord.ext import commands
+from groq import AsyncGroq
 
 # =========================================================
 # OWNER & TOKEN SETUP
