@@ -9020,25 +9020,31 @@ async def chat(ctx, *, message: str):
 
     hist = _groq_history.setdefault(ctx.channel.id, [])
     hist.append({"role": "user", "content": message})
-    hist[:] = hist[-20:] # Keep the last 20 messages for context
+    hist[:] = hist[-20:]
 
     try:
         res = await groq_client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model="llama3-8b-8192", # Using a much faster, more reliable model
             messages=[
                 {
                     "role": "system", 
                     "content": "You are a toxic, edgy Gen-Z Discord user. Your replies MUST be under 10 words. NEVER use punctuation. Never capitalize letters. Use slang like 'fr', 'ngl', 'cap', 'bet', 'w', 'L', 'projecting', 'cope', 'yap'. You must roast the user or dismiss what they say. Example replies: 'nah u just projecting fr', 'massive L', 'bro is yapping', 'w take ngl'."
                 }
             ] + hist,
-            max_tokens=30, # Force short responses
-            temperature=0.9, # Make it creative
+            max_tokens=30,
+            temperature=0.9,
         )
-        reply = res.choices[0].message.content.strip().lower()
-        # Remove any accidental punctuation at the end
-        reply = reply.rstrip(".!?")
+        
+        reply = res.choices[0].message.content
+        
+        # If the AI returns nothing, force a fallback message
+        if not reply or not reply.strip():
+            reply = "bro what 💀"
+        else:
+            reply = reply.strip().lower().rstrip(".!?")
         
     except Exception as e:
+        print(f"GROQ ERROR: {e}")
         err = f"<:3xge_:1561436999599005736> Groq error: `{str(e)[:150]}`"
         if ctx.interaction: return await ctx.interaction.followup.send(err)
         return await ctx.send(err)
@@ -9046,12 +9052,11 @@ async def chat(ctx, *, message: str):
     hist.append({"role": "assistant", "content": reply})
     hist[:] = hist[-20:]
 
-    # Pick a random reaction GIF
     gif_url = random.choice(REACTION_GIFS)
 
-    # Create the embed like in your screenshot
+    # Removed the ** so it doesn't show ** if empty
     embed = discord.Embed(
-        description=f"**{reply}**",
+        description=reply, 
         color=discord.Color.from_rgb(30, 31, 34)
     )
     embed.set_image(url=gif_url)
