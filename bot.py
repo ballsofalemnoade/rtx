@@ -6385,56 +6385,33 @@ SPANK_GIFS = [
     "https://cdn.discordapp.com/attachments/1525052130266841090/1541230890447933470/anime-spanking.gif?ex=6a8cd69e&is=6a8b851e&hm=494fbffbc9dee0b95cfd435f4a6f76f11287b59c4079d0ca3a23384b9105a6c8"
 ]
 
-@bot.hybrid_command(name="spank", description="Spank someone!")
+@bot.hybrid_command(name="spank", description="Spank someone!", nsfw=True)
 async def spank(ctx, member: discord.Member = None):
-    if not await check_nsfw(ctx):
-        return
+    if not await check_nsfw(ctx): return
     if member is None:
-        embed = discord.Embed(
-            description="❌ You need to specify someone to spank!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
-        return
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> You need to specify someone to spank!", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
     
     if member.id == ctx.author.id:
-        embed = discord.Embed(
-            description=f"🖐️ {ctx.author.mention} spanks themselves... their a werido...!",
-            color=discord.Color.orange()
-        )
+        embed = discord.Embed(description=f"{ctx.author.mention} **spanks themselves thats kinds weird**...", color=discord.Color.orange())
         embed.set_image(url=random.choice(SPANK_GIFS))
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed)
-        else:
-            await ctx.send(embed=embed)
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+        else: await ctx.send(embed=embed)
         return
     
     if member.bot:
-        embed = discord.Embed(
-            description="❌ You can't spank a bot!",
-            color=discord.Color.red()
-        )
-        if ctx.interaction:
-            await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else:
-            await ctx.send(embed=embed)
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> **You can't spank a bot.**", color=discord.Color.red())
+        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        else: await ctx.send(embed=embed)
         return
     
-    embed = discord.Embed(
-        description=f"🖐️ {ctx.author.mention} spanked {member.mention} 🍑",
-        color=discord.Color.from_rgb(255, 182, 193)
-    )
+    embed = discord.Embed(description=f"{ctx.author.mention} **spanked** {member.mention}", color=discord.Color.from_rgb(255, 182, 193))
     embed.set_image(url=random.choice(SPANK_GIFS))
     embed.set_footer(text="Spank spank!")
     
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed)
-    else:
-        await ctx.send(embed=embed)
-
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
 # =========================================================
 # BENDOVER COMMAND
 # =========================================================
