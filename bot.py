@@ -8996,7 +8996,10 @@ async def clearsnipe(ctx):
     except Exception:
         pass
         
-# ============ GROQ AI CHAT (SENZ VIBE) ============
+# ============ GROQ AI SETUP ============
+_groq_key = os.getenv("GROQ_API_KEY")
+groq_client = AsyncGroq(api_key=_groq_key) if _groq_key else None
+_groq_history = {}
 
 # A list of funny reaction GIFs to randomly attach
 REACTION_GIFS = [
@@ -9020,7 +9023,7 @@ async def chat(ctx, *, message: str):
     hist[:] = hist[-20:] # Keep the last 20 messages for context
 
     try:
-        res = groq_client.chat.completions.create(
+        res = await groq_client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=[
                 {
