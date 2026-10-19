@@ -8919,130 +8919,6 @@ async def setnick(ctx, member: discord.Member, *, nickname: str = None):
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
-# WOULD YOU RATHER COMMAND
-# =========================================================
-
-WYR_QUESTIONS = [
-    ("Be able to fly", "Be able to turn invisible"),
-    ("Have unlimited money", "Have unlimited time"),
-    ("Live in the past", "Live in the future"),
-    ("Never use social media again", "Never watch TV/movies again"),
-    ("Be famous", "Be the richest person alive"),
-    ("Only eat sweet food forever", "Only eat savory food forever"),
-    ("Always be 10 minutes late", "Always be 20 minutes early"),
-    ("Have a rewind button for your life", "Have a pause button for your life"),
-    ("Fight 100 duck-sized horses", "Fight 1 horse-sized duck"),
-    ("Be able to talk to animals", "Speak every human language"),
-    ("Have free Wi-Fi everywhere", "Have free food everywhere"),
-    ("Never sleep again", "Sleep 12 hours every day"),
-    ("Always have to sing instead of speak", "Always have to dance everywhere you go"),
-    ("Know how you die", "Know when you die"),
-    ("Give up video games forever", "Never Watch memes again"),
-    ("Have no fingers", "Have no toes"),
-    ("Live in a treehouse", "Live in an underwater house"),
-    ("Be the smartest person alive", "Be the funniest person alive"),
-    ("Have your search history leaked", "Have your Discord chat leaked"),
-    ("Fight Mike Tyson", "Fight khabib"),
-    ("Always have to tell the truth", "Always lie"),
-    ("Be able to teleport", "Be able to read minds"),
-    ("Have unlimited battery life", "Have unlimited storage"),
-    ("Eat only pizza for a year", "Eat only burgers for a year"),
-    ("Have a pet dinosaur", "Have a pet dragon"),
-    ("Be really tall but weak", "Be really short but strong"),
-    ("Never have to work again", "Love your job forever"),
-    ("Have a personal chef", "Have a personal trainer"),
-    ("Be invisible when naked", "Fly but only at walking speed"),
-    ("Always have hiccups", "Always have itchy feet"),
-    ("Never use your phone again", "Never use your computer again"),
-    ("Have a photographic memory", "Be able to forget anything on command"),
-    ("Be able to stop time", "Be able to slow time"),
-    ("Have a lifetime supply of coffee", "Have a lifetime supply of tea"),
-    ("Live without music", "Live without movies"),
-    ("Look 20 years younger", "Look 20 years older"),
-    ("Have a robot butler", "Have a robot maid"),
-    ("Only shower in cold water", "Only shower in boiling water"),
-    ("Give up your phone for a year for $1M", "Give up your bed for a year for $1M"),
-    ("Fight a bear with a knife", "Fight a wolf with your bare hands"),
-    ("Have money but no friends", "Have friends but no money"),
-    ("Be able to breathe underwater", "Be able to survive in space"),
-    ("Have a 10-hour commute", "Have no commute but work 12-hour days"),
-    ("Only wear dirty clothes", "Only wear ugly clothes"),
-    ("Have a pet that talks", "Be able to talk to plants"),
-    ("Never age physically", "Never age mentally"),
-    ("Be able to control fire", "Be able to control water"),
-    ("Have a flying car", "Have a self-driving house"),
-    ("Always be too hot", "Always be too cold"),
-    ("Only ever whisper", "Only ever scream"),
-]
-
-
-class WYRView(discord.ui.View):
-    def __init__(self, author_id: int, option_a: str, option_b: str, timeout=120):
-        super().__init__(timeout=timeout)
-        self.author_id = author_id
-        self.option_a = option_a
-        self.option_b = option_b
-        self.votes_a = set()
-        self.votes_b = set()
-
-        # Update button labels
-        self.children[0].label = f"🅰️ {option_a[:70]}"
-        self.children[1].label = f"🅱️ {option_b[:70]}"
-
-    def build_embed(self):
-        total = len(self.votes_a) + len(self.votes_b)
-        if total == 0:
-            pct_a = pct_b = 0
-        else:
-            pct_a = int(len(self.votes_a) / total * 100)
-            pct_b = 100 - pct_a
-
-        bar_len = 20
-        filled_a = int(bar_len * pct_a / 100) if total else 0
-        bar_a = "█" * filled_a + "░" * (bar_len - filled_a)
-        bar_b = "█" * (bar_len - filled_a) + "░" * filled_a
-
-        embed = discord.Embed(
-            title="🤔 Would You Rather?",
-            color=discord.Color.blurple(),
-        )
-        embed.add_field(
-            name=f"🅰️ {self.option_a}",
-            value=f"{bar_a} **{pct_a}%** ({len(self.votes_a)} votes)",
-            inline=False,
-        )
-        embed.add_field(
-            name=f"🅱️ {self.option_b}",
-            value=f"{bar_b} **{pct_b}%** ({len(self.votes_b)} votes)",
-            inline=False,
-        )
-        embed.set_footer(text=f"Total votes: {total}")
-        return embed
-
-    @discord.ui.button(label="Option A", style=discord.ButtonStyle.primary)
-    async def button_a(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.votes_a.add(interaction.user.id)
-        self.votes_b.discard(interaction.user.id)
-        await interaction.response.edit_message(embed=self.build_embed(), view=self)
-
-    @discord.ui.button(label="Option B", style=discord.ButtonStyle.danger)
-    async def button_b(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.votes_b.add(interaction.user.id)
-        self.votes_a.discard(interaction.user.id)
-        await interaction.response.edit_message(embed=self.build_embed(), view=self)
-
-
-@bot.command(name="wouldyourather", aliases=["wyr"])
-async def wouldyourather(ctx):
-    option_a, option_b = random.choice(WYR_QUESTIONS)
-    view = WYRView(ctx.author.id, option_a, option_b)
-    embed = view.build_embed()
-
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed, view=view)
-    else:
-        await ctx.send(embed=embed, view=view)
-# =========================================================
 # SOFTBAN COMMAND
 # =========================================================
 
@@ -9119,48 +8995,67 @@ async def clearsnipe(ctx):
     except Exception:
         pass
         
- # ============ GROQ AI CHAT ============
-from groq import Groq
+# ============ GROQ AI CHAT (SENZ VIBE) ============
 
-_groq_key = os.getenv("GROQ_API_KEY")
-groq_client = Groq(api_key=_groq_key) if _groq_key else None
+# A list of funny reaction GIFs to randomly attach
+REACTION_GIFS = [
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3o1bG53Znd6Z3R0M3owZHVhY2ttdmNydzV1dDVsN3JmbmMyMW4waiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o7TKSjRrfIPjeiVyM/giphy.gif", # Guy holding paper (D-Wade)
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3o1bG53Znd6Z3R0M3owZHVhY2ttdmNydzV1dDVsN3JmbmMyMW4waiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/L95W4wv8nnb9K/giphy.gif", # Laughing
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3o1bG53Znd6Z3R0M3owZHVhY2ttdmNydzV1dDVsN3JmbmMyMW4waiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3o7TKWKvLd6J1XK5a0/giphy.gif", # Crying laughing
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3o1bG53Znd6Z3R0M3owZHVhY2ttdmNydzV1dDVsN3JmbmMyMW4waiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/26tOZ42Mg6pbTUPHW/giphy.gif", # Mind blown
+    "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3o1bG53Znd6Z3R0M3owZHVhY2ttdmNydzV1dDVsN3JmbmMyMW4waiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/d2lcHJTG5Tscg/giphy.gif", # Bruh
+]
 
-_groq_history = {}
-
-@bot.command(name="chat", aliases=["ai", "ask"])
+@bot.hybrid_command(name="chat", aliases=["ai", "ask"], description="Chat with the AI")
 async def chat(ctx, *, message: str):
     if groq_client is None:
-        return await ctx.send("❌ No GROQ_API_KEY set on Railway.")
+        return await ctx.send("<:3xge_:1561436999599005736> No GROQ_API_KEY set on Railway.")
 
-    async with ctx.typing():
-        hist = _groq_history.setdefault(ctx.channel.id, [])
-        hist.append({"role": "user", "content": message})
-        hist[:] = hist[-20:]
+    if ctx.interaction:
+        await ctx.interaction.response.defer()
 
-        try:
-            res = groq_client.chat.completions.create(
-                model="openai/gpt-oss-120b",  # <-- NEW MODEL
-                messages=[{"role": "system", "content": "You are a helpful Discord assistant. Keep replies short."}] + hist,
-                max_tokens=1024,
-            )
-            reply = res.choices[0].message.content.strip() or "(no reply)"
-        except Exception as e:
-            return await ctx.send(f"❌ Groq error: `{str(e)[:150]}`")
+    hist = _groq_history.setdefault(ctx.channel.id, [])
+    hist.append({"role": "user", "content": message})
+    hist[:] = hist[-20:] # Keep the last 20 messages for context
 
-        hist.append({"role": "assistant", "content": reply})
-        hist[:] = hist[-20:]
+    try:
+        res = groq_client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a toxic, edgy Gen-Z Discord user. Your replies MUST be under 10 words. NEVER use punctuation. Never capitalize letters. Use slang like 'fr', 'ngl', 'cap', 'bet', 'w', 'L', 'projecting', 'cope', 'yap'. You must roast the user or dismiss what they say. Example replies: 'nah u just projecting fr', 'massive L', 'bro is yapping', 'w take ngl'."
+                }
+            ] + hist,
+            max_tokens=30, # Force short responses
+            temperature=0.9, # Make it creative
+        )
+        reply = res.choices[0].message.content.strip().lower()
+        # Remove any accidental punctuation at the end
+        reply = reply.rstrip(".!?")
+        
+    except Exception as e:
+        err = f"<:3xge_:1561436999599005736> Groq error: `{str(e)[:150]}`"
+        if ctx.interaction: return await ctx.interaction.followup.send(err)
+        return await ctx.send(err)
 
-    # Split long replies for Discord's 2000-char limit
-    for i in range(0, len(reply), 1900):
-        await ctx.send(reply[i:i+1900])
+    hist.append({"role": "assistant", "content": reply})
+    hist[:] = hist[-20:]
 
+    # Pick a random reaction GIF
+    gif_url = random.choice(REACTION_GIFS)
 
-@bot.command(name="chatreset", aliases=["aireset"])
-async def chatreset(ctx):
-    _groq_history.pop(ctx.channel.id, None)
-    await ctx.send("🧹 Cleared.")
-# ============ END GROQ ============
+    # Create the embed like in your screenshot
+    embed = discord.Embed(
+        description=f"**{reply}**",
+        color=discord.Color.from_rgb(30, 31, 34)
+    )
+    embed.set_image(url=gif_url)
 
+    if ctx.interaction:
+        await ctx.interaction.followup.send(embed=embed)
+    else:
+        await ctx.reply(embed=embed, mention_author=False)
 # =========================================================
 # CODE REDEEMING SYSTEM (like Steal a Brainrot) — PREFIX ONLY
 # =========================================================
