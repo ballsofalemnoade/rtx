@@ -4549,19 +4549,21 @@ async def giveaway_reroll(ctx, message_id: int, count: int = 1):
 # SYNC COMMAND
 # =========================================================
 
-@bot.hybrid_command(name="sync", description="Force sync slash commands")
+@bot.hybrid_command(name="sync", description="Force syncs bot commands globally (Owner only)")
 @app_commands.default_permissions(administrator=True)
 async def sync(ctx):
-    if not await is_owner(ctx): return
-    
-    # Tell Discord to wait while we sync (fixes the 3-second timeout)
+    # Strict owner check
+    if not await is_owner(ctx): 
+        return
+        
+    # Defer so Discord doesn't time out while syncing
     if ctx.interaction:
         await ctx.interaction.response.defer(ephemeral=True)
 
     try:
         await bot.tree.sync()
         embed = discord.Embed(
-            description="<a:Sync:1557367041709576242> Commands have been synced globally!",
+            description="<:3xge_:1561845454411407411> Commands have been synced globally!",
             color=discord.Color.from_rgb(87, 242, 135),
         )
         if ctx.interaction: 
@@ -4570,7 +4572,7 @@ async def sync(ctx):
             await ctx.send(embed=embed)
     except Exception as e:
         embed = discord.Embed(
-            description=f"❌ Sync failed: {e}", 
+            description=f"<:3xge_:1561436999599005736> Sync failed: {e}", 
             color=discord.Color.from_rgb(237, 66, 69)
         )
         if ctx.interaction: 
