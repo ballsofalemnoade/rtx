@@ -3255,50 +3255,68 @@ async def custom_embed(ctx, *, content: str):
             except Exception:
                 pass
         await ctx.send(embed=embed)
+# =========================================================
+# PURGE / CLEAR SYSTEM
+# =========================================================
 
-async def _run_purge(ctx, amount: int, tick: str = "<:3xge_:1561441316385333249>"):
+async def _run_purge(ctx, amount: int, member: discord.Member = None, tick: str = "<:3xge_:1561441316385333249>"):
     if not is_staff(ctx.author):
         e = discord.Embed(description="<:3xge_:1561436999599005736> Staff only.", color=discord.Color.red())
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
         return await ctx.send(embed=e)
 
-    if amount < 1 or amount > 100:
-        embed = discord.Embed(description="<:3xge_:1561436999599005736> Choose an amount between **1 and 100**.", color=discord.Color.from_rgb(237, 66, 69))
+    if amount < 1 or amount > 100000:
+        embed = discord.Embed(description="<:3xge_:1561436999599005736> Choose an amount between **1 and 100,000**.", color=discord.Color.red())
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
-    extra = 1 if ctx.message is not None and ctx.interaction is None else 0
-    deleted = await ctx.channel.purge(limit=amount + extra)
-    removed = len(deleted) - extra
+    # Defer the response if it's a slash command so we don't hit the 3-second timeout
+    if ctx.interaction:
+        await ctx.interaction.response.defer(ephemeral=True)
 
-    embed = discord.Embed(description=f"{tick} Deleted **{removed}** message(s).", color=discord.Color.from_rgb(87, 242, 135))
-    msg = await ctx.send(embed=embed)
-    await asyncio.sleep(4)
-    try: await msg.delete()
-    except Exception: pass
+    # Setup the check for a specific user if provided
+    def check_func(message):
+        if member:
+            return message.author.id == member.id
+        return True
+
+    extra = 1 if ctx.message is not None and ctx.interaction is None else 0
+    
+    try:
+        # discord.py handles the API limits automatically under the hood
+        deleted = await ctx.channel.purge(limit=amount + extra, check=check_func)
+        removed = len(deleted) - extra
+        if removed < 0: removed = 0
+
+        target_text = f" from {member.mention}" if member else ""
+        embed = discord.Embed(description=f"{tick} Deleted **{removed}** message(s){target_text}.", color=discord.Color.from_rgb(87, 242, 135))
+        
+        if ctx.interaction:
+            await ctx.interaction.followup.send(embed=embed)
+        else:
+            msg = await ctx.send(embed=embed)
+            await asyncio.sleep(4)
+            try: await msg.delete()
+            except: pass
+            
+    except Exception as e:
+        err = discord.Embed(description=f"<:3xge_:1561436999599005736> Failed to purge: `{e}`", color=discord.Color.red())
+        if ctx.interaction: await ctx.interaction.followup.send(embed=err, ephemeral=True)
+        else: await ctx.send(embed=err)
 
 
 @bot.hybrid_command(name="clear", description="Clear a number of messages")
-async def clear(ctx, amount: int):
-    await _run_purge(ctx, amount)
+@app_commands.describe(amount="How many messages to delete", member="Only delete messages from this user (optional)")
+@app_commands.default_permissions(manage_messages=True)
+async def clear(ctx, amount: int, member: discord.Member = None):
+    await _run_purge(ctx, amount, member)
 
 
-@bot.hybrid_command(name="purge", description="Mass delete messages (Admin/Moderator only)")
-async def purge(ctx, amount: int):
-    await _run_purge(ctx, amount, "<:3xge_:1561441316385333249>")
-
-@bot.hybrid_command(name="slowmode", description="Set channel slowmode")
-@commands.has_permissions(manage_channels=True)
-async def slowmode(ctx, seconds: int):
-    if seconds < 0:
-        embed = discord.Embed(description="<:3xge_:1561436999599005736> Seconds cannot be negative.", color=discord.Color.red())
-        return await ctx.send(embed=embed)
-    await ctx.channel.edit(slowmode_delay=seconds)
-    if seconds == 0:
-        embed = discord.Embed(description="<:3xge_:1561357016264605787> Slowmode has been disabled.", color=discord.Color.green())
-    else:
-        embed = discord.Embed(description=f"<:3xge_:1561357016264605787> Slowmode has been set to **{seconds} seconds**.", color=discord.Color.green())
-    await ctx.send(embed=embed)
+@bot.hybrid_command(name="purge", description="Mass delete messages")
+@app_commands.describe(amount="How many messages to delete", member="Only delete messages from this user (optional)")
+@app_commands.default_permissions(manage_messages=True)
+async def purge(ctx, amount: int, member: discord.Member = None):
+    await _run_purge(ctx, amount, member, "<:3xge_:1561441316385333249>")
 # =========================================================
 # BRAINROT DICE COMMAND & UI
 # =========================================================
