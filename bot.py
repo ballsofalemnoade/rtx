@@ -9536,14 +9536,15 @@ async def on_ready():
         if message_id:
             active_codes[message_id] = code_id
 
-    # ONLY DO THIS. Do not use copy_global_to.
     try:
         await bot.tree.sync()
         print("🔄 Global sync complete.")
     except Exception as e:
         print(f"⚠️ Global sync failed: {e}")
 
+    # THIS MAKES THE BOT SHOW AS ONLINE (GREEN DOT)
     await bot.change_presence(
+        status=discord.Status.online,
         activity=discord.Activity(
             type=discord.ActivityType.listening,
             name="R!help",
