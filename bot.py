@@ -9023,9 +9023,8 @@ async def chat(ctx, *, message: str):
     hist[:] = hist[-20:]
 
     try:
-        # FIXED: Using the current, supported Groq model
         res = await groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile", 
+            model="llama-3.1-8b-instant",  # 👈 THIS IS THE GUARANTEED MODEL
             messages=[
                 {
                     "role": "system", 
@@ -9038,15 +9037,15 @@ async def chat(ctx, *, message: str):
         
         reply = res.choices[0].message.content
         
-        # Fallback if the AI returns an empty string (fixes the "**" bug)
         if not reply or not reply.strip():
             reply = "bro what 💀"
         else:
             reply = reply.strip().lower().rstrip(".!?")
         
     except Exception as e:
-        # Print the exact error to Railway logs for debugging
-        print(f"GROQ ERROR: {e}")
+        # This prints the exact error to Railway so you can see it
+        print(f"==============\nGROQ API ERROR: {e}\n==============")
+        
         err = f"<:3xge_:1561436999599005736> Groq error: `{str(e)[:150]}`"
         if ctx.interaction: return await ctx.interaction.followup.send(err)
         return await ctx.send(err)
