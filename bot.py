@@ -8861,62 +8861,40 @@ async def lyrics(ctx, *, query: str):
         else:
             await ctx.send(embed=embed)
 # =========================================================
-# SETNICK
+# SETNICK COMMAND
 # =========================================================
 
-@bot.hybrid_command(name="setnick", aliases=["nick", "nickname"], description="Change a member's nickname")
+@bot.hybrid_command(name="setnick", aliases=["nick"], description="Change a member's nickname")
 @app_commands.describe(member="Member to rename", nickname="New nickname (leave empty to reset)")
+@app_commands.default_permissions(manage_nicknames=True)
 async def setnick(ctx, member: discord.Member, *, nickname: str = None):
-    is_mod = False
-    if isinstance(ctx.author, discord.Member):
-        if ctx.author.guild_permissions.manage_nicknames or _is_server_mod(ctx.author) or ctx.author.id in OWNER_IDS:
-            is_mod = True
-    if not is_mod:
-        embed = discord.Embed(description=f"<a:maria_winters:1559574601359425657> {ctx.author.mention} you don't have set nick perms.", color=discord.Color.from_rgb(237, 66, 69))
+    if not ctx.author.guild_permissions.manage_nicknames and ctx.author.id not in OWNER_IDS:
+        e = discord.Embed(description="<:3xge_:1561436999599005736> You are missing **manage nicknames** perms.", color=discord.Color.red())
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=e, ephemeral=True)
+        return await ctx.send(embed=e)
+
+    error = can_moderate(ctx.author, member, ctx.guild, "change the nickname of")
+    if error:
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> {error}", color=discord.Color.red())
         if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         return await ctx.send(embed=embed)
 
-    if ctx.guild.owner_id == member.id and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description="<a:maria_winters:1559574601359425657> You cannot change the server owner's nickname.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
-
-    if member.guild_permissions.manage_nicknames or member.guild_permissions.administrator:
-        if ctx.author.id != ctx.guild.owner_id:
-            embed = discord.Embed(description="<a:maria_winters:1559574601359425657> You cannot change a staff member's nickname.", color=discord.Color.from_rgb(237, 66, 69))
-            if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-            return await ctx.send(embed=embed)
-
-    if ctx.guild.me and member.top_role >= ctx.guild.me.top_role and ctx.author.id != ctx.guild.owner_id:
-        embed = discord.Embed(description=f"<a:maria_winters:1559574601359425657> {member.mention} has a higher or equal role than me.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        return await ctx.send(embed=embed)
-
-    if nickname:
+    if nickname: 
         nickname = nickname.strip()[:32]
-
+        
     try:
         await member.edit(nick=nickname, reason=f"Set by {ctx.author}")
-
+        
+        # Updated Emoji: 1561841450835120158
         if nickname:
-            embed = discord.Embed(
-                description=f"<a:maria_winters:1559313029483466762> Changed {member.mention}'s name to **{nickname}**",
-                color=discord.Color.from_rgb(87, 242, 135),
-            )
+            embed = discord.Embed(description=f"<:3xge_:1561841450835120158> Changed {member.mention}'s Nick to **{nickname}**", color=discord.Color.green())
         else:
-            embed = discord.Embed(
-                description=f"<a:maria_winters:1559313029483466762> Reset {member.mention}'s nickname.",
-                color=discord.Color.from_rgb(87, 242, 135),
-            )
-
+            embed = discord.Embed(description=f"<:3xge_:1561841450835120158> Reset {member.mention}'s Nick.", color=discord.Color.green())
+            
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
         else: await ctx.send(embed=embed)
-    except discord.Forbidden:
-        embed = discord.Embed(description="<a:maria_winters:1559574601359425657> I don't have permission to change that nickname.", color=discord.Color.from_rgb(237, 66, 69))
-        if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
-        else: await ctx.send(embed=embed)
     except Exception as e:
-        embed = discord.Embed(description=f"<a:maria_winters:1559574601359425657> Failed: `{str(e)[:150]}`", color=discord.Color.from_rgb(237, 66, 69))
+        embed = discord.Embed(description=f"<:3xge_:1561436999599005736> Failed: `{e}`", color=discord.Color.red())
         if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
         else: await ctx.send(embed=embed)
 # =========================================================
