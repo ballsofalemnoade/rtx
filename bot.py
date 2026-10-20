@@ -16,6 +16,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from groq import AsyncGroq
+active_calls = {} 
 
 # =========================================================
 # OWNER & TOKEN SETUP
