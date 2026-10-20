@@ -4629,9 +4629,8 @@ async def goon(ctx, member: discord.Member):
             except:
                 pass
         await ctx.send(embed=embed)
-
 # =========================================================
-# ADVANCED FREE SERVER BACKUP & RESTORE SYSTEM
+# ADVANCED FREE SERVER BACKUP & RESTORE SYSTEM (V2)
 # =========================================================
 
 from discord.ui import View, Select
@@ -4641,19 +4640,18 @@ class RestoreSelectView(View):
         super().__init__(timeout=180)
         self.ctx = ctx
         self.backup_data = backup_data
-        self.selected_options = ["Delete Roles", "Delete Channels", "Load Roles", "Load Channels", "Load Settings", "Load Messages"]
+        self.selected_options = ["Delete Roles", "Delete Channels", "Load Roles", "Load Channels", "Load Settings"]
 
         self.select = Select(
             placeholder="Select options to load from backup...",
             min_values=1,
-            max_values=6,
+            max_values=5,
             options=[
                 discord.SelectOption(label="Delete Roles", value="Delete Roles", default=True, description="Wipes current non-managed roles"),
                 discord.SelectOption(label="Delete Channels", value="Delete Channels", default=True, description="Wipes current server channels"),
-                discord.SelectOption(label="Load Roles", value="Load Roles", default=True, description="Recreates roles with exact permissions & colors"),
-                discord.SelectOption(label="Load Channels", value="Load Channels", default=True, description="Recreates categories, text, and voice channels"),
-                discord.SelectOption(label="Load Settings", value="Load Settings", default=True, description="Restores server name, icon, and region settings"),
-                discord.SelectOption(label="Load Messages", value="Load Messages", default=True, description="Restores backed-up messages into channels")
+                discord.SelectOption(label="Load Roles", value="Load Roles", default=True, description="Recreates roles with exact permissions & positions"),
+                discord.SelectOption(label="Load Channels", value="Load Channels", default=True, description="Recreates categories and channels with exact overwrites"),
+                discord.SelectOption(label="Load Settings", value="Load Settings", default=True, description="Restores server name, icon, etc."),
             ]
         )
         self.select.callback = self.select_callback
@@ -4672,7 +4670,6 @@ class RestoreSelectView(View):
         
         confirm_view = ConfirmRestoreView(self.ctx, self.backup_data, self.selected_options)
         
-        roles_up = "will be updated" if "Load Roles" in self.selected_options else "will be skipped"
         ch_del = len(self.ctx.guild.channels) if "Delete Channels" in self.selected_options else 0
         ch_cre = len(self.backup_data["channels"]) if "Load Channels" in self.selected_options else 0
 
@@ -4680,10 +4677,10 @@ class RestoreSelectView(View):
             title="⚠️ Warning",
             description=(
                 "**Hey, be careful!** The following actions will be taken on this server and **can not be undone**:\n\n"
-                f"• **1** roles {roles_up}\n"
                 f"• **{ch_del}** channels will be **deleted**\n"
                 f"• **{ch_cre}** channels will be created\n"
-                f"• Server settings will {'be updated' if 'Load Settings' in self.selected_options else 'remain unchanged'}"
+                f"• Roles will be restored to their exact hierarchy.\n"
+                f"• Channel permissions will be cloned perfectly."
             ),
             color=discord.Color.gold()
         )
@@ -4712,33 +4709,36 @@ class ConfirmRestoreView(View):
         await interaction.response.edit_message(embed=discord.Embed(title="♻️ Restoring Server...", description="Processing backup payload. Please wait...", color=discord.Color.blue()), view=None)
 
         try:
-            if "Load Settings" in self.options:
-                try:
-                    await guild.edit(name=self.backup_data.get("name", guild.name))
-                except Exception:
-                    pass
-
+            # 1. DELETE CHANNELS
             if "Delete Channels" in self.options:
                 for channel in guild.channels:
                     try:
                         await channel.delete(reason="Server Restore: Wiping old channels")
-                        await asyncio.sleep(0.2)
-                    except Exception:
-                        pass
+                        await asyncio.sleep(0.3)
+                    except: pass
 
+            # 2. DELETE ROLES
             if "Delete Roles" in self.options:
                 for role in guild.roles:
                     if role != guild.default_role and not role.managed and role < guild.me.top_role:
                         try:
                             await role.delete(reason="Server Restore: Wiping old roles")
-                            await asyncio.sleep(0.2)
-                        except Exception:
-                            pass
+                            await asyncio.sleep(0.3)
+                        except: pass
 
-            role_mapping = {}
+            # 3. LOAD SETTINGS
+            if "Load Settings" in self.options:
+                try: await guild.edit(name=self.backup_data.get("name", guild.name))
+                except: pass
+
+            # 4. LOAD ROLES & MAP IDS
+            role_mapping = {} # old_id -> new_role
+            roles_to_position = []
+            
             if "Load Roles" in self.options:
                 for r_data in self.backup_data["roles"]:
                     try:
+                        # Create the role with basic perms first
                         new_role = await guild.create_role(
                             name=r_data["name"],
                             color=discord.Color(r_data["color"]),
@@ -4747,70 +4747,99 @@ class ConfirmRestoreView(View):
                             mentionable=r_data["mentionable"],
                             reason="Server Restore: Restoring role"
                         )
-                        role_mapping[r_data["name"]] = new_role
+                        role_mapping[r_data["id"]] = new_role
+                        roles_to_position.append((new_role, r_data["position"]))
                         await asyncio.sleep(0.2)
-                    except Exception:
-                        pass
+                    except: pass
+                
+                # Reorder roles to exact hierarchy
+                try:
+                    positions = {role: pos for role, pos in roles_to_position}
+                    await guild.edit_role_positions(positions=positions)
+                except: pass
 
+            # 5. LOAD CHANNELS & APPLY OVERWRITES
             category_mapping = {}
             channel_mapping = {}
-
+            channel_saves = sorted(self.backup_data["channels"], key=lambda x: x["position"])
+            
             if "Load Channels" in self.options:
-                for c_data in self.backup_data["channels"]:
+                # First pass: Create Categories
+                for c_data in channel_saves:
                     if c_data["type"] == "category":
                         try:
-                            new_cat = await guild.create_category(name=c_data["name"], position=c_data["position"])
+                            new_cat = await guild.create_category(
+                                name=c_data["name"], 
+                                position=c_data["position"]
+                            )
                             category_mapping[c_data["name"]] = new_cat
                             channel_mapping[c_data["name"]] = new_cat
+                            
+                            # Apply category overwrites
+                            await self._apply_overwrites(new_cat, c_data.get("overwrites", []), role_mapping, guild)
                             await asyncio.sleep(0.3)
-                        except Exception:
-                            pass
+                        except: pass
 
-                for c_data in self.backup_data["channels"]:
-                    if c_data["type"] == "text":
+                # Second pass: Create Text & Voice channels
+                for c_data in channel_saves:
+                    if c_data["type"] in ["text", "voice"]:
                         cat = category_mapping.get(c_data["category"]) if c_data["category"] else None
                         try:
-                            new_ch = await guild.create_text_channel(name=c_data["name"], category=cat, position=c_data["position"])
-                            channel_mapping[c_data["name"]] = new_ch
-                            await asyncio.sleep(0.3)
-                        except Exception:
-                            pass
-                    elif c_data["type"] == "voice":
-                        cat = category_mapping.get(c_data["category"]) if c_data["category"] else None
-                        try:
-                            new_ch = await guild.create_voice_channel(name=c_data["name"], category=cat, position=c_data["position"])
-                            channel_mapping[c_data["name"]] = new_ch
-                            await asyncio.sleep(0.3)
-                        except Exception:
-                            pass
-
-            if "Load Messages" in self.options and "messages" in self.backup_data:
-                for ch_name, msgs in self.backup_data["messages"].items():
-                    target_ch = channel_mapping.get(ch_name)
-                    if target_ch and isinstance(target_ch, discord.TextChannel):
-                        for m in reversed(msgs):
-                            try:
-                                author_tag = m["author"]
-                                content = f"**[Backup Archive] {author_tag}:** {m['content']}"
+                            if c_data["type"] == "text":
+                                new_ch = await guild.create_text_channel(
+                                    name=c_data["name"], 
+                                    category=cat, 
+                                    position=c_data["position"],
+                                    topic=c_data.get("topic"),
+                                    nsfw=c_data.get("nsfw", False),
+                                    slowmode_delay=c_data.get("slowmode_delay", 0)
+                                )
+                            else:
+                                new_ch = await guild.create_voice_channel(
+                                    name=c_data["name"], 
+                                    category=cat, 
+                                    position=c_data["position"]
+                                )
                                 
-                                if m.get("attachments"):
-                                    content += "\n" + "\n".join(m["attachments"])
-                                    
-                                await target_ch.send(content)
-                                await asyncio.sleep(0.5)
-                            except Exception:
-                                pass
+                            channel_mapping[c_data["name"]] = new_ch
+                            
+                            # Apply channel overwrites
+                            await self._apply_overwrites(new_ch, c_data.get("overwrites", []), role_mapping, guild)
+                            await asyncio.sleep(0.3)
+                        except: pass
 
             success_embed = discord.Embed(
                 title="✅ Success",
-                description="Server restoration completed successfully with all layouts, styles, and settings copied perfectly!",
+                description="Server restoration completed successfully with all layouts, styles, and permissions copied perfectly!",
                 color=discord.Color.green()
             )
             await self.ctx.send(embed=success_embed)
 
         except Exception as e:
-            err_embed = discord.Embed(title="❌ Error", description=f"An error occurred during restoration: `{e}`", color=discord.Color.red())
+            err_embed = discord.Embed(title="❌ Error", description=f"An error occurred: `{e}`", color=discord.Color.red())
             await self.ctx.send(embed=err_embed)
+
+    async def _apply_overwrites(self, channel, overwrites_data, role_mapping, guild):
+        """Helper to map old IDs to new roles/users and apply permissions."""
+        overwrites = {}
+        for ow in overwrites_data:
+            target_id = ow["target_id"]
+            allow = discord.Permissions(ow["allow"])
+            deny = discord.Permissions(ow["deny"])
+            
+            if ow["target_type"] == "role":
+                if target_id in role_mapping:
+                    overwrites[role_mapping[target_id]] = discord.PermissionOverwrite.from_pair(allow, deny)
+                elif target_id == guild.default_role.id: # @everyone
+                    overwrites[guild.default_role] = discord.PermissionOverwrite.from_pair(allow, deny)
+            elif ow["target_type"] == "member":
+                member = guild.get_member(target_id)
+                if member:
+                    overwrites[member] = discord.PermissionOverwrite.from_pair(allow, deny)
+                    
+        if overwrites:
+            try: await channel.edit(overwrites=overwrites)
+            except: pass
 
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red)
     async def cancel_button(self, interaction: discord.Interaction, button: discord.Button):
@@ -4818,114 +4847,103 @@ class ConfirmRestoreView(View):
             return await interaction.response.send_message("This menu isn't for you!", ephemeral=True)
         await interaction.response.edit_message(embed=discord.Embed(title="❌ Cancelled", description="Restoration cancelled.", color=discord.Color.red()), view=None)
 
+
 @bot.hybrid_group(name="backup", description="Server backup management commands")
-@app_commands.check(owner_only_predicate)
+@app_commands.default_permissions(administrator=True)
 async def backup(ctx):
+    if not ctx.author.guild_permissions.administrator and ctx.author.id not in OWNER_IDS:
+        return await ctx.send("Administrator permissions required.")
     if ctx.invoked_subcommand is None:
         await ctx.send("Use `/backup create`, `/backup info`, or `/backup load`.", ephemeral=True)
 
-@backup.command(name="create", description="Create a backup of this server (channels, roles, settings, and messages)")
-@app_commands.check(owner_only_predicate)
-async def backup_create(ctx, message_count: int = 25):
-    if ctx.author != ctx.guild.owner and ctx.author.id not in OWNER_IDS:
-        return await ctx.send("Only the server owner can create backups.", ephemeral=True)
+@backup.command(name="create", description="Create a backup of this server")
+@app_commands.default_permissions(administrator=True)
+async def backup_create(ctx):
+    if not ctx.author.guild_permissions.administrator and ctx.author.id not in OWNER_IDS:
+        return await ctx.send("Administrator permissions required.")
 
     guild = ctx.guild
-    if ctx.interaction:
-        await ctx.interaction.response.defer(ephemeral=True)
+    if ctx.interaction: await ctx.interaction.response.defer(ephemeral=True)
 
     import random, string, datetime
     backup_id = "".join(random.choices(string.ascii_uppercase + string.digits, k=11))
     
-    channels_data = []
-    for c in sorted(guild.channels, key=lambda x: x.position):
-        channels_data.append({
-            "name": c.name,
-            "type": str(c.type),
-            "category": c.category.name if c.category else None,
-            "position": c.position
-        })
-
+    # Save Roles (including exact position and ID)
     roles_data = []
     for r in guild.roles:
         if r != guild.default_role and not r.managed:
             roles_data.append({
+                "id": r.id,
                 "name": r.name,
                 "color": r.color.value,
                 "permissions": r.permissions.value,
                 "hoist": r.hoist,
-                "mentionable": r.mentionable
+                "mentionable": r.mentionable,
+                "position": r.position
             })
 
-    messages_data = {}
-    if message_count > 0:
-        for channel in guild.text_channels:
-            try:
-                ch_msgs = []
-                async for message in channel.history(limit=message_count):
-                    ch_msgs.append({
-                        "author": str(message.author),
-                        "content": message.content,
-                        "attachments": [att.url for att in message.attachments]
-                    })
-                if ch_msgs:
-                    messages_data[channel.name] = ch_msgs
-            except Exception:
-                pass
+    # Save Channels (including precise Overwrites)
+    channels_data = []
+    for c in sorted(guild.channels, key=lambda x: x.position):
+        overwrites = []
+        for target, overwrite in c.overwrites.items():
+            overwrites.append({
+                "target_id": target.id,
+                "target_type": "role" if isinstance(target, discord.Role) else "member",
+                "allow": overwrite.pair()[0].value,
+                "deny": overwrite.pair()[1].value
+            })
+            
+        channels_data.append({
+            "name": c.name,
+            "type": str(c.type),
+            "position": c.position,
+            "category": c.category.name if hasattr(c, 'category') and c.category else None,
+            "topic": getattr(c, 'topic', None),
+            "nsfw": getattr(c, 'nsfw', False),
+            "slowmode_delay": getattr(c, 'slowmode_delay', 0),
+            "overwrites": overwrites
+        })
 
     server_backups[backup_id] = {
         "name": guild.name,
         "channels": channels_data,
         "roles": roles_data,
-        "messages": messages_data,
         "created_at": datetime.datetime.now().strftime("%d. %b %Y - %H:%M")
     }
 
-    date_str = datetime.datetime.now().strftime("%d. %b %Y - %H:%M")
-    backup_label = f"{guild.name} | {date_str} ({backup_id})"
-
     embed = discord.Embed(
-        title="✅ Success",
-        description=(
-            f"Successfully **created backup** with the id `{backup_id}`.\n\n"
-            f"This backup contains full server settings, channels, roles, and message archives!\n\n"
-            f"**Usage**\n"
-            f"`/backup info backup_id: {backup_id}`\n"
-            f"`/backup load backup_id: {backup_id}`"
-        ),
+        title="✅ Backup Created",
+        description=f"Successfully created backup ID: `{backup_id}`\n\nThis backup includes **exact role hierarchy** and **channel permission overwrites**.",
         color=discord.Color.green()
     )
+    embed.add_field(name="Usage", value=f"`/backup load backup_id: {backup_id}`", inline=False)
 
-    if ctx.interaction:
-        await ctx.interaction.followup.send(embed=embed, ephemeral=True)
-    else:
-        await ctx.send(embed=embed)
+    if ctx.interaction: await ctx.interaction.followup.send(embed=embed, ephemeral=True)
+    else: await ctx.send(embed=embed)
 
 @backup.command(name="info", description="View details of a specific backup id")
-@app_commands.check(owner_only_predicate)
+@app_commands.default_permissions(administrator=True)
 async def backup_info(ctx, backup_id: str):
+    if not ctx.author.guild_permissions.administrator and ctx.author.id not in OWNER_IDS:
+        return await ctx.send("Administrator permissions required.")
+
     bdata = server_backups.get(backup_id)
     if not bdata:
         return await ctx.send("❌ No backup found with that ID.", ephemeral=True)
 
     embed = discord.Embed(
         title=f"📦 Backup Info: {backup_id}",
-        description=(
-            f"**Server Name:** {bdata['name']}\n"
-            f"**Created At:** {bdata['created_at']}\n"
-            f"**Channels Saved:** {len(bdata['channels'])}\n"
-            f"**Roles Saved:** {len(bdata['roles'])}\n"
-            f"**Message Archives:** {len(bdata['messages'])} channels archived"
-        ),
+        description=f"**Server Name:** {bdata['name']}\n**Created At:** {bdata['created_at']}\n**Channels Saved:** {len(bdata['channels'])}\n**Roles Saved:** {len(bdata['roles'])}",
         color=discord.Color.blue()
     )
     await ctx.send(embed=embed, ephemeral=True)
 
 @backup.command(name="load", description="Load and restore a backup into the current server")
-@app_commands.check(owner_only_predicate)
+@app_commands.default_permissions(administrator=True)
 async def backup_load(ctx, backup_id: str):
-    if ctx.author != ctx.guild.owner and ctx.author.id not in OWNER_IDS:
-        return await ctx.send("Only the server owner can load backups.", ephemeral=True)
+    if not ctx.author.guild_permissions.administrator and ctx.author.id not in OWNER_IDS:
+        return await ctx.send("Administrator permissions required.")
 
     bdata = server_backups.get(backup_id)
     if not bdata:
@@ -4933,20 +4951,14 @@ async def backup_load(ctx, backup_id: str):
 
     embed = discord.Embed(
         title="⚠️ Warning",
-        description=(
-            "**What do you want to load from the backup?**\n\n"
-            "Select below what actions you would like to perform. In the next menu, "
-            "you will be able to see a detailed list of changes before continuing."
-        ),
+        description="Select below what actions you would like to perform. You will see a detailed list of changes before continuing.",
         color=discord.Color.gold()
     )
 
     view = RestoreSelectView(ctx, bdata)
-    if ctx.interaction:
-        await ctx.interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-    else:
-        await ctx.send(embed=embed, view=view)
-        
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    else: await ctx.send(embed=embed, view=view)
+    
 @bot.hybrid_command(name="memes", description="Get a random meme GIF")
 async def memes(ctx):
     import random
