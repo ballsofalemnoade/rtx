@@ -10028,6 +10028,61 @@ async def on_ready_jail_restore():
                 await release_user(g, m, "Auto-released (Timer completed)")
             if member:
                 bot.loop.create_task(auto_release(guild, member, remaining))
+                # =========================================================
+# USERPHONE SYSTEM
+# =========================================================
+
+@bot.hybrid_command(name="userphone", description="Start a userphone call in this channel")
+@app_commands.describe(member="The person you are calling (optional)")
+async def userphone(ctx, member: discord.Member = None):
+    # Check if a call is already active in this channel
+    if ctx.channel.id in active_calls:
+        embed = discord.Embed(
+            description="ℹ️ A userphone call is already in progress. Use `/hangup` to end the call.",
+            color=discord.Color.blue()
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+    
+    # If not, start the call
+    active_calls[ctx.channel.id] = ctx.author.id
+    
+    caller = ctx.author.mention
+    target = f"**{member.display_name}**" if member else "**someone**"
+    
+    embed = discord.Embed(
+        title="📞 Calling on userphone...",
+        description=f"{caller} is calling {target}.\nBe sure to follow Ryzez's **Phone Etiquette**.",
+        color=discord.Color.green()
+    )
+    embed.set_footer(text="Use /hangup to end the call.")
+    
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
+
+
+@bot.hybrid_command(name="hangup", description="Hang up an ongoing call")
+async def hangup(ctx):
+    # Check if a call is active
+    if ctx.channel.id not in active_calls:
+        embed = discord.Embed(
+            description="<:3xge_:1561436999599005736> There is no active userphone call in this channel.",
+            color=discord.Color.red()
+        )
+        if ctx.interaction: return await ctx.interaction.response.send_message(embed=embed, ephemeral=True)
+        return await ctx.send(embed=embed)
+    
+    # End the call
+    del active_calls[ctx.channel.id]
+    
+    embed = discord.Embed(
+        title="📞 Call Ended",
+        description=f"{ctx.author.mention} hung up the phone.",
+        color=discord.Color.red()
+    )
+    
+    if ctx.interaction: await ctx.interaction.response.send_message(embed=embed)
+    else: await ctx.send(embed=embed)
 # =========================================================
 # RUN BOT
 # =========================================================
